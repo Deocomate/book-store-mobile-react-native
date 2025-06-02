@@ -1,0 +1,23 @@
+# Add your custom ignore patterns here
+
+# Example: *.log
+
+# Example: temp/
+
+node_modules/
+.api/
+.git/
+.env
+.gitignore
+app.d.ts
+babel.config.js
+eslint.config.js
+expo-env.d.ts
+global.d.ts
+metro.config.js
+nativewind-env.d.ts
+package-lock.json
+postcss.config.js
+README.md
+tailwind.config.js
+tsconfig.json
