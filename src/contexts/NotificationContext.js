@@ -1,169 +1,207 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { notificationService } from '../services';
-import { useAuth } from './AuthContext';
+// src/contexts/NotificationContext.js
+import React, {createContext, useCallback, useContext, useEffect, useState} from 'react';
+import {notificationService} from '../services';
+import {useAuth} from './AuthContext';
 
 const NotificationContext = createContext(null);
 
-export const NotificationProvider = ({ children }) => {
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const { isAuthenticated } = useAuth();
+export const NotificationProvider = ({children}) => {
+    const [notifications, setNotifications] = useState([]);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [error, setError] = useState(null);
+    const {isAuthenticated, user} = useAuth();
 
-  const fetchNotifications = async (params = {}) => {
-    if (!isAuthenticated) return;
-    
-    try {
-      setIsLoading(true);
-      const response = await notificationService.getNotifications(params);
-      setNotifications(response.content || []);
-      return response;
-    } catch (error) {
-      setError('Failed to fetch notifications');
-      console.error('Fetch notifications error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const [pageIndex, setPageIndex] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const pageSize = 15;
 
-  const fetchUnreadCount = async () => {
-    if (!isAuthenticated) return;
-    
-    try {
-      const count = await notificationService.getUnreadCount();
-      setUnreadCount(count);
-      return count;
-    } catch (error) {
-      console.error('Fetch unread count error:', error);
-    }
-  };
+    const fetchNotifications = useCallback(async (page = 1, isRefreshing = false) => {
+        if (!isAuthenticated || !user) {
+            setNotifications([]);
+            setUnreadCount(0);
+            setPageIndex(1);
+            setTotalPages(1);
+            setIsLoading(false);
+            setLoadingMore(false);
+            return;
+        }
+        if (loadingMore && !isRefreshing) return;
 
-  // Fetch notifications and unread count when authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchNotifications();
-      fetchUnreadCount();
-    } else {
-      setNotifications([]);
-      setUnreadCount(0);
-    }
-  }, [isAuthenticated]);
+        if (page === 1) setIsLoading(true); else if (!isRefreshing) setLoadingMore(true);
+        setError(null);
 
-  const markAsRead = async (notificationId) => {
-    try {
-      setIsLoading(true);
-      await notificationService.markAsRead(notificationId);
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(notification => 
-          notification.id === notificationId 
-            ? { ...notification, isRead: true } 
-            : notification
-        )
-      );
-      
-      setUnreadCount(prev => Math.max(0, prev - 1));
-      return true;
-    } catch (error) {
-      setError('Failed to mark notification as read');
-      console.error('Mark as read error:', error);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        try {
+            const response = await notificationService.getMyNotifications(page, pageSize);
 
-  const markAllAsRead = async () => {
-    try {
-      setIsLoading(true);
-      await notificationService.markAllAsRead();
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(notification => ({ ...notification, isRead: true }))
-      );
-      
-      setUnreadCount(0);
-      return true;
-    } catch (error) {
-      setError('Failed to mark all notifications as read');
-      console.error('Mark all as read error:', error);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+            console.log(response)
 
-  const deleteNotification = async (notificationId) => {
-    try {
-      setIsLoading(true);
-      await notificationService.deleteNotification(notificationId);
-      
-      // Update local state
-      const deletedNotification = notifications.find(n => n.id === notificationId);
-      setNotifications(prev => prev.filter(n => n.id !== notificationId));
-      
-      // Update unread count if the deleted notification was unread
-      if (deletedNotification && !deletedNotification.isRead) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-      
-      return true;
-    } catch (error) {
-      setError('Failed to delete notification');
-      console.error('Delete notification error:', error);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+            if (response && response.status === 200 && response.result) {
+                const newNotifications = response.result.data || [];
+                if (isRefreshing || page === 1) {
+                    setNotifications(newNotifications);
+                } else {
+                    setNotifications(prev => [...prev, ...newNotifications]);
+                }
+                setTotalPages(response.result.totalPages || 1);
+                setPageIndex(page);
+            } else {
+                throw new Error(response?.message || "Không thể tải thông báo.");
+            }
+        } catch (err) {
+            console.error('Fetch notifications error:', err);
+            setError(err.message);
+            if (page === 1) setNotifications([]);
+        } finally {
+            setIsLoading(false);
+            setLoadingMore(false);
+            // UI component (NotificationScreen) sẽ quản lý trạng thái refreshing của chính nó.
+        }
+    }, [isAuthenticated, user, pageSize, loadingMore]);
 
-  const deleteAllNotifications = async () => {
-    try {
-      setIsLoading(true);
-      await notificationService.deleteAllNotifications();
-      
-      // Update local state
-      setNotifications([]);
-      setUnreadCount(0);
-      return true;
-    } catch (error) {
-      setError('Failed to delete all notifications');
-      console.error('Delete all notifications error:', error);
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    useEffect(() => {
+        if (isAuthenticated) {
+            fetchNotifications(1, true); // Initial fetch or fetch on auth change
+        } else {
+            // Clear data if user logs out or is not authenticated
+            setNotifications([]);
+            setUnreadCount(0);
+            setPageIndex(1);
+            setTotalPages(1);
+        }
+    }, [isAuthenticated, fetchNotifications]); // fetchNotifications is stable due to useCallback
 
-  const value = {
-    notifications,
-    unreadCount,
-    isLoading,
-    error,
-    fetchNotifications,
-    fetchUnreadCount,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-    deleteAllNotifications
-  };
+    useEffect(() => {
+        if (isAuthenticated) {
+            const currentUnread = notifications.filter(n => n.status !== 'READ' && n.status !== 'FAILED').length;
+            setUnreadCount(currentUnread);
+        }
+    }, [notifications, isAuthenticated]);
 
-  return (
-    <NotificationContext.Provider value={value}>
-      {children}
-    </NotificationContext.Provider>
-  );
+    const markAsRead = async (notificationLogId) => {
+        if (!isAuthenticated) return false;
+        setError(null);
+        try {
+            const response = await notificationService.markNotificationAsRead(notificationLogId);
+            if (response && response.status === 200) {
+                setNotifications(prev => prev.map(n => n.notification_log_id === notificationLogId ? {
+                    ...n, status: 'READ'
+                } : n));
+                return true;
+            } else {
+                throw new Error(response?.message || "Không thể đánh dấu đã đọc.");
+            }
+        } catch (err) {
+            console.error('Mark as read error:', err);
+            setError(err.message);
+            return false;
+        }
+    };
+
+    const markAllAsRead = async () => {
+        if (!isAuthenticated) return false;
+        setError(null);
+        try {
+            const response = await notificationService.markAllNotificationsAsRead();
+            if (response && response.status === 200) {
+                setNotifications(prev => prev.map(n => ({...n, status: 'READ'})));
+                return true;
+            } else {
+                throw new Error(response?.message || "Không thể đánh dấu tất cả đã đọc.");
+            }
+        } catch (err) {
+            console.error('Mark all as read error:', err);
+            setError(err.message);
+            return false;
+        }
+    };
+
+    const deleteNotificationById = async (notificationLogId) => {
+        if (!isAuthenticated) return false;
+        setError(null);
+        try {
+            const response = await notificationService.deleteNotification(notificationLogId);
+            if (response && response.status === 200) {
+                setNotifications(prev => prev.filter(n => n.notification_log_id !== notificationLogId));
+                return true;
+            } else {
+                throw new Error(response?.message || "Không thể xóa thông báo.");
+            }
+        } catch (err) {
+            console.error('Delete notification error:', err);
+            setError(err.message);
+            return false;
+        }
+    };
+
+    const deleteAllNotifications = async () => {
+        if (!isAuthenticated || notifications.length === 0) return false;
+        setError(null);
+        setIsLoading(true);
+        try {
+            const response = await notificationService.deleteAllNotifications();
+            if (response && response.status === 200) {
+                setNotifications([]);
+                setUnreadCount(0);
+                setPageIndex(1);
+                setTotalPages(1);
+                return true;
+            } else {
+                throw new Error(response?.message || "Không thể xóa tất cả thông báo.");
+            }
+        } catch (err) {
+            console.error('Delete all notifications error:', err);
+            setError(err.message || 'Lỗi xóa tất cả thông báo.');
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const registerDeviceToken = async (deviceToken, deviceType = 'MOBILE') => {
+        if (!isAuthenticated || !user) return false;
+        try {
+            const response = await notificationService.registerFcmToken(deviceToken);
+            if (response && response.status === 201) {
+                console.log('FCM token registered successfully:', response.result);
+                return true;
+            }
+            console.warn('FCM token registration did not return expected success:', response);
+            return false;
+        } catch (err) {
+            console.error('Register FCM token error:', err);
+            return false;
+        }
+    };
+
+    const value = {
+        notifications,
+        unreadCount,
+        isLoading,
+        loadingMore,
+        error,
+        pageIndex,
+        totalPages,
+        fetchNotifications,
+        markAsRead,
+        markAllAsRead,
+        deleteNotificationById,
+        deleteAllNotifications,
+        registerDeviceToken,
+    };
+
+    return (<NotificationContext.Provider value={value}>
+        {children}
+    </NotificationContext.Provider>);
 };
 
 export const useNotification = () => {
-  const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error('useNotification must be used within a NotificationProvider');
-  }
-  return context;
+    const context = useContext(NotificationContext);
+    if (!context) {
+        throw new Error('useNotification must be used within a NotificationProvider');
+    }
+    return context;
 };
 
-export default NotificationContext; 
+export default NotificationContext;

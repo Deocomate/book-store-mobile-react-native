@@ -1,6 +1,4 @@
-
-
-/* ===== src/screens/account/OrderHistoryScreen.jsx ===== */
+// src/screens/account/OrderHistoryScreen.jsx
 import { orderService } from '@/services';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -8,22 +6,40 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, RefreshControl, SafeAreaView, Text, TouchableOpacity, View } from 'react-native';
 
 const OrderStatusMapping = {
-    0: { text: 'Chờ xác nhận', color: 'text-amber-600', bg: 'bg-amber-100' },
-    1: { text: 'Đã xác nhận', color: 'text-sky-600', bg: 'bg-sky-100' },
-    2: { text: 'Đang chuẩn bị', color: 'text-blue-600', bg: 'bg-blue-100' },
-    3: { text: 'Đang giao', color: 'text-indigo-600', bg: 'bg-indigo-100' },
-    4: { text: 'Đã giao', color: 'text-green-600', bg: 'bg-green-100' },
+    0: { text: 'Đã giao hàng', color: 'text-green-600', bg: 'bg-green-100' }, // Giao hàng thành công
+    1: { text: 'Chờ xác nhận', color: 'text-amber-600', bg: 'bg-amber-100' },
+    2: { text: 'Chờ vận chuyển', color: 'text-blue-600', bg: 'bg-blue-100' }, // Chờ đơn vị vận chuyển
+    3: { text: 'Đang vận chuyển', color: 'text-indigo-600', bg: 'bg-indigo-100' },
+    4: { text: 'Đã giao', color: 'text-green-600', bg: 'bg-green-100' }, // Giống 0, có thể cần làm rõ hơn
     5: { text: 'Đã hủy', color: 'text-red-600', bg: 'bg-red-100' },
     default: { text: 'Không xác định', color: 'text-gray-600', bg: 'bg-gray-100' },
 };
 
 const PaymentMethodMapping = {
-    0: 'COD',
-    1: 'VNPay',
-    2: 'MoMo',
-    default: 'Khác'
+    0: 'Thanh toán khi nhận hàng (COD)',
+    1: 'Thanh toán qua VNPay',
+    2: 'Thanh toán qua MoMo',
+    default: 'Phương thức khác'
 };
 
+// PaymentStatus không trực tiếp hiển thị trong list item, nhưng có thể dùng trong OrderDetail
+// const PaymentStatusMapping = {
+//     0: { text: 'Đã thanh toán', color: 'text-green-600' },
+//     1: { text: 'Chưa thanh toán', color: 'text-red-600' },
+//     2: { text: 'Đã hoàn tiền', color: 'text-blue-600' },
+//     3: { text: 'Thanh toán thất bại', color: 'text-orange-600' },
+//     5: { text: 'Đã huỷ thanh toán', color: 'text-gray-500' },
+//     default: { text: 'Không xác định', color: 'text-gray-500' },
+// };
+
+
+const InfoRow = ({ icon, label, value, isCurrency = false }) => (
+    <View className="flex-row items-center mt-1">
+        <Ionicons name={icon} size={14} color="#6B7280" />
+        <Text className="text-sm text-gray-600 ml-1.5 w-24">{label}</Text>
+        <Text className={`text-sm ${isCurrency ? 'font-semibold text-sky-700' : 'text-gray-800'}`}>{value}</Text>
+    </View>
+);
 
 function OrderHistoryScreen() {
     const router = useRouter();
@@ -35,16 +51,20 @@ function OrderHistoryScreen() {
     const pageSize = 10;
 
     const fetchOrders = useCallback(async (page = 1, refreshing = false) => {
-        if (!refreshing && page > 1 && page > totalPages) return; // Stop fetching if no more pages
-        if (refreshing) setIsLoading(true); else if (page > 1) { /* show loading for next page? */ }
+        if (!refreshing && page > 1 && page > totalPages) return;
+        if (refreshing || page === 1) setIsLoading(true);
 
         try {
+            // API GET /order/my-orders?pageIndex={pageIndex}&pageSize={pageSize}
             const response = await orderService.getMyOrders(page, pageSize);
+            // Backend OrderService.getOrdersByUserId trả về ApiResponse<PageResponse<OrderResponse>>
+            // PageResponse: { currentPage, totalPages, totalElements, pageSize, data: List<OrderResponse> }
+            // OrderResponse: { id, userId, profileId, fullName, phone, address, status, paymentMethod, paymentStatus, totalPrice, note, createdAt, orderProducts: Set<OrderProductResponse> }
             if (response && response.status === 200 && response.result) {
                 const newOrders = response.result.data || [];
                 setOrders(prevOrders => (page === 1 ? newOrders : [...prevOrders, ...newOrders]));
                 setTotalPages(response.result.totalPages || 1);
-                setPageIndex(page);
+                setPageIndex(page); // Cập nhật pageIndex hiện tại
             } else {
                 Alert.alert("Lỗi", response?.message || "Không thể tải lịch sử đơn hàng.");
             }
@@ -55,34 +75,43 @@ function OrderHistoryScreen() {
             setIsLoading(false);
             if (refreshing) setIsRefreshing(false);
         }
-    }, [totalPages]);
+    }, [totalPages]); // Thêm totalPages vào dependencies
 
     useEffect(() => {
+        // console.log("OrderHistoryScreen mounted or fetchOrders changed");
         fetchOrders(1, true);
     }, [fetchOrders]);
 
     const onRefresh = () => {
+        // console.log("Refreshing orders...");
         setIsRefreshing(true);
+        setPageIndex(1); // Reset page index khi refresh
         fetchOrders(1, true);
     };
 
     const loadMoreOrders = () => {
-        if (!isLoading && pageIndex < totalPages) {
+        // console.log(`Attempting to load more: isLoading=${isLoading}, isRefreshing=${isRefreshing}, pageIndex=${pageIndex}, totalPages=${totalPages}`);
+        if (!isLoading && !isRefreshing && pageIndex < totalPages) {
+            // console.log(`Loading page ${pageIndex + 1}`);
             fetchOrders(pageIndex + 1);
         }
+    };
+
+    const handleOrderItemPress = (orderId) => {
+        router.push(`/account/order-history/${orderId}`);
     };
 
     const renderOrderItem = ({ item }) => {
         const statusInfo = OrderStatusMapping[item.status] || OrderStatusMapping.default;
         const paymentMethodText = PaymentMethodMapping[item.paymentMethod] || PaymentMethodMapping.default;
-        const createdAtDate = new Date(item.createdAt).toLocaleDateString('vi-VN', {
+        const createdAtDate = item.createdAt ? new Date(item.createdAt).toLocaleDateString('vi-VN', {
             day: '2-digit', month: '2-digit', year: 'numeric'
-        });
+        }) : 'N/A';
 
         return (
             <TouchableOpacity
                 className="bg-white p-4 mb-3 mx-3 rounded-lg shadow-md active:bg-gray-50"
-                onPress={() => Alert.alert("Chi tiết đơn hàng", `Xem chi tiết đơn hàng #${item.id} (chức năng đang phát triển).`)} // TODO: Navigate to order detail screen
+                onPress={() => handleOrderItemPress(item.id)}
             >
                 <View className="flex-row justify-between items-center mb-2">
                     <Text className="text-base font-semibold text-gray-800">Đơn hàng #{item.id}</Text>
@@ -92,7 +121,7 @@ function OrderHistoryScreen() {
                 </View>
                 <InfoRow icon="calendar-outline" label="Ngày đặt:" value={createdAtDate} />
                 <InfoRow icon="person-outline" label="Người nhận:" value={item.fullName} />
-                <InfoRow icon="pricetags-outline" label="Tổng tiền:" value={`${item.totalPrice.toLocaleString('vi-VN')}₫`} isCurrency />
+                <InfoRow icon="pricetags-outline" label="Tổng tiền:" value={`${item.totalPrice?.toLocaleString('vi-VN')}₫`} isCurrency />
                 <InfoRow icon="card-outline" label="Thanh toán:" value={paymentMethodText} />
                 {item.orderProducts && item.orderProducts.length > 0 && (
                     <Text className="text-xs text-gray-500 mt-1.5">
@@ -102,15 +131,6 @@ function OrderHistoryScreen() {
             </TouchableOpacity>
         );
     };
-
-    const InfoRow = ({ icon, label, value, isCurrency = false }) => (
-        <View className="flex-row items-center mt-1">
-            <Ionicons name={icon} size={14} color="#6B7280" />
-            <Text className="text-sm text-gray-600 ml-1.5 w-24">{label}</Text>
-            <Text className={`text-sm ${isCurrency ? 'font-semibold text-sky-700' : 'text-gray-800'}`}>{value}</Text>
-        </View>
-    );
-
 
     if (isLoading && pageIndex === 1 && !isRefreshing) {
         return <View className="flex-1 justify-center items-center"><ActivityIndicator size="large" color="#0EA5E9" /></View>;
@@ -140,7 +160,7 @@ function OrderHistoryScreen() {
                     contentContainerStyle={{ paddingTop: 10, paddingBottom: 20 }}
                     onEndReached={loadMoreOrders}
                     onEndReachedThreshold={0.5}
-                    ListFooterComponent={isLoading && pageIndex > 1 ? <ActivityIndicator size="small" color="#0EA5E9" style={{ marginVertical: 20 }} /> : null}
+                    ListFooterComponent={isLoading && pageIndex > 1 && pageIndex < totalPages ? <ActivityIndicator size="small" color="#0EA5E9" style={{ marginVertical: 20 }} /> : null}
                     refreshControl={
                         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} colors={["#0EA5E9"]} tintColor={"#0EA5E9"} />
                     }

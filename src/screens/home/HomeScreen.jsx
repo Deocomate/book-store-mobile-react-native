@@ -1,241 +1,369 @@
-import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons';
-import React from 'react';
-import { FlatList, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+// src/screens/home/HomeScreen.jsx
+import { blogService, productService } from '@/services'; // Import các services
+import { FontAwesome, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
-// --- DỮ LIỆU GIẢ ---
-// Trong ứng dụng thực tế, bạn sẽ fetch dữ liệu này từ API
-const generateFakeProducts = (count = 10) => {
-    const products = [];
-    const bookTitles = ["Cuốn Theo Chiều Gió", "Nhà Giả Kim", "Đắc Nhân Tâm", "Harry Potter và Hòn Đá Phù Thủy", "Bố Già", "Rừng Na Uy", "Hoàng Tử Bé", "Tôi Thấy Hoa Vàng Trên Cỏ Xanh"];
-    const authors = ["Margaret Mitchell", "Paulo Coelho", "Dale Carnegie", "J.K. Rowling", "Mario Puzo", "Haruki Murakami", "Antoine de Saint-Exupéry", "Nguyễn Nhật Ánh"];
-    for (let i = 0; i < count; i++) {
-        const original_price = Math.floor(Math.random() * 300 + 50) * 1000; // Giá từ 50k đến 350k
-        const discount_percent = Math.random() < 0.7 ? Math.random() * 0.4 + 0.1 : 0; // 10-50% discount, 70% chance
-        const sale_price = Math.floor(original_price * (1 - discount_percent) / 1000) * 1000;
-        products.push({
-            product_id: `book_${i + 1}`,
-            title: bookTitles[i % bookTitles.length] + (count > bookTitles.length ? ` Tập ${Math.floor(i / bookTitles.length) + 1}` : ''),
-            author: authors[i % authors.length],
-            thumbnail_url: `https://picsum.photos/seed/book${i + Math.floor(Math.random() * 1000)}/200/300`, // Random seed for variety
-            sale_price: sale_price,
-            original_price: original_price,
-            average_rating: parseFloat((Math.random() * 1.5 + 3.5).toFixed(1)), // Rating 3.5 - 5.0
-            quantity_in_stock: Math.floor(Math.random() * 100),
-        });
-    }
-    return products;
-};
-
-const generateFakeCategories = (count = 5) => {
-    const categories = [];
-    const names = ["Văn Học", "Kinh Tế", "Kỹ Năng Sống", "Thiếu Nhi", "Sách Nước Ngoài", "Lịch Sử"];
-    const icons = ["book-open-page-variant", "finance", "account-heart", "human-child", "translate", "bank"];
-    for (let i = 0; i < count; i++) {
-        categories.push({
-            category_id: `cat_${i + 1}`, name: names[i % names.length], icon: icons[i % icons.length], // Thêm icon cho danh mục
-        });
-    }
-    return categories;
-};
-
-const generateFakeBlogs = (count = 3) => {
-    const blogs = [];
-    const titles = ["10 Cuốn Sách Nên Đọc Trong Hè Này", "Tìm Hiểu Về Tiểu Thuyết Hiện Đại", "Cách Rèn Luyện Thói Quen Đọc Sách Mỗi Ngày", "Những Tác Giả Trẻ Triển Vọng Của Năm",];
-    for (let i = 0; i < count; i++) {
-        blogs.push({
-            blog_id: `blog_${i + 1}`,
-            title: titles[i % titles.length],
-            thumbnail_url: `https://picsum.photos/200`,
-            excerpt: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
-        });
-    }
-    return blogs;
-};
-
-const fakeProducts = generateFakeProducts(10);
-const fakeCategories = generateFakeCategories(5);
-const fakeBlogs = generateFakeBlogs(3);
-// --- KẾT THÚC DỮ LIỆU GIẢ ---
-
-const StarRating = ({ rating, size = 14 }) => {
+// --- UI Components (Giữ nguyên hoặc tùy chỉnh nhẹ) ---
+const StarRating = ({ rating, size = 14, reviewCount = 0 }) => {
     const fullStars = Math.floor(rating);
     const halfStar = rating % 1 >= 0.5;
     const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
-    return (<View className="flex-row items-center">
-        {[...Array(fullStars)].map((_, i) => <FontAwesome key={`full_${i}`} name="star" size={size}
-            color="#FFC107" />)}
-        {halfStar && <FontAwesome name="star-half-empty" size={size} color="#FFC107" />}
-        {[...Array(emptyStars)].map((_, i) => <FontAwesome key={`empty_${i}`} name="star-o" size={size}
-            color="#FFC107" />)}
-        <Text className="text-xs text-gray-600 ml-1">{rating.toFixed(1)}</Text>
-    </View>);
+    return (
+        <View className="flex-row items-center">
+            {[...Array(fullStars)].map((_, i) => <FontAwesome key={`full_${i}`} name="star" size={size} color="#FFC107" />)}
+            {halfStar && <FontAwesome name="star-half-empty" size={size} color="#FFC107" />}
+            {[...Array(emptyStars)].map((_, i) => <FontAwesome key={`empty_${i}`} name="star-o" size={size} color="#FFC107" />)}
+            <Text className="text-xs text-gray-600 ml-1">{rating ? rating.toFixed(1) : 'Mới'}{reviewCount > 0 ? ` (${reviewCount})` : ''}</Text>
+        </View>
+    );
 };
 
-const ProductCard = ({ product }) => {
-    return (<TouchableOpacity className="bg-white rounded-lg shadow-md p-3 m-2 w-40 overflow-hidden">
-        <Image
-            source={{ uri: product.thumbnail_url }}
-            className="w-full h-48 rounded-md"
-            contentFit="cover"
-            placeholder={{ uri: 'https://picsum.photos/200' }}
-            transition={300}
-        />
-        <Text className="text-sm font-semibold mt-2 text-gray-800" numberOfLines={2}>{product.title}</Text>
-        <Text className="text-xs text-gray-500 mt-0.5" numberOfLines={1}>{product.author}</Text>
-        <View className="mt-1">
-            <Text className="text-sm font-bold text-blue-600">
-                {product.sale_price.toLocaleString('vi-VN')}₫
-            </Text>
-            {product.original_price > product.sale_price && (<Text className="text-xs text-gray-400 line-through">
-                {product.original_price.toLocaleString('vi-VN')}₫
-            </Text>)}
-        </View>
-        <View className="mt-1">
-            <StarRating rating={product.average_rating} />
-        </View>
-    </TouchableOpacity>);
+const ProductCard = ({ product, onPress }) => {
+    // product.discount là giá bán sau giảm
+    // product.price là giá gốc
+    // product.discountPercent được tính sẵn từ backend
+    return (
+        <TouchableOpacity onPress={onPress} className="bg-white rounded-lg shadow-md p-3 m-2 w-40 overflow-hidden active:opacity-80">
+            <Image
+                source={{ uri: product.thumbnail }} // API trả về thumbnail có sẵn domain
+                className="w-full h-48 rounded-md"
+                contentFit="cover"
+                placeholder={{ uri: 'https://via.placeholder.com/200x300/e0e0e0/999999?text=Book' }}
+                transition={300}
+            />
+            <Text className="text-sm font-semibold mt-2 text-gray-800" numberOfLines={2}>{product.title}</Text>
+            <Text className="text-xs text-gray-500 mt-0.5" numberOfLines={1}>{product.author}</Text>
+            <View className="mt-1">
+                <Text className="text-sm font-bold text-sky-600">
+                    {product.discount?.toLocaleString('vi-VN')}₫
+                </Text>
+                {product.price > product.discount && (
+                    <Text className="text-xs text-gray-400 line-through">
+                        {product.price?.toLocaleString('vi-VN')}₫
+                    </Text>
+                )}
+            </View>
+            {product.discountPercent > 0 && (
+                <View className="absolute top-1 right-1 bg-red-500 px-1.5 py-0.5 rounded-full">
+                    <Text className="text-white text-[10px] font-semibold">-{Math.round(product.discountPercent)}%</Text>
+                </View>
+            )}
+            <View className="mt-1">
+                <StarRating rating={product.averageRate} reviewCount={product.rates?.length || 0} />
+            </View>
+        </TouchableOpacity>
+    );
+};
+
+const categoryIcons = {
+    "Văn Học": "book-open-page-variant-outline",
+    "Kinh Tế": "finance",
+    "Kỹ Năng Sống": "account-heart-outline",
+    "Thiếu Nhi": "human-child",
+    "Sách Nước Ngoài": "translate",
+    "Lịch Sử": "bank",
+    "Công nghệ": "laptop-chromebook",
+    "Lập trình": "code-tags",
+    "Phát triển Web": "web",
+    "Mobile App": "cellphone",
+    "Dữ liệu": "database-search-outline",
+    "Default": "tag-outline"
 };
 
 const CategoryChip = ({ category, onPress }) => {
-    return (<TouchableOpacity
-        onPress={onPress}
-        className="bg-sky-100 rounded-lg p-3 m-1.5 items-center w-24 h-24 justify-center shadow"
-    >
-        <MaterialCommunityIcons name={category.icon || "tag"} size={28} color="#0369A1" />
-        <Text className="text-xs text-sky-700 font-medium mt-1.5 text-center"
-            numberOfLines={2}>{category.name}</Text>
-    </TouchableOpacity>);
+    const iconName = categoryIcons[category.name] || categoryIcons["Default"];
+    return (
+        <TouchableOpacity
+            onPress={onPress}
+            className="bg-sky-100 rounded-lg p-3 m-1.5 items-center w-24 h-24 justify-center shadow active:bg-sky-200"
+        >
+            <MaterialCommunityIcons name={iconName} size={28} color="#0369A1" />
+            <Text className="text-xs text-sky-700 font-medium mt-1.5 text-center" numberOfLines={2}>
+                {category.name}
+            </Text>
+        </TouchableOpacity>
+    );
+};
+
+const createExcerpt = (content, maxLength = 100) => {
+    if (!content) return "";
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength).trim() + "...";
 };
 
 const BlogPostItem = ({ post, onPress }) => {
-    return (<TouchableOpacity
-        onPress={onPress}
-        className="bg-white rounded-lg shadow p-3 mx-4 mb-3 flex-row items-start"
-    >
-        <Image
-            source={{ uri: post.thumbnail_url }}
-            className="w-24 h-24 rounded-md mr-3"
-            contentFit="cover"
-            placeholder={{ uri: 'https://picsum.photos/200' }}
-            transition={300}
-        />
-        <View className="flex-1">
-            <Text className="text-md font-semibold text-gray-800" numberOfLines={2}>{post.title}</Text>
-            <Text className="text-xs text-gray-600 mt-1" numberOfLines={3}>{post.excerpt}</Text>
-            <Text className="text-xs text-blue-600 mt-1.5 font-medium">Đọc thêm</Text>
-        </View>
-    </TouchableOpacity>);
+    return (
+        <TouchableOpacity
+            onPress={onPress}
+            className="bg-white rounded-lg shadow p-3 mx-4 mb-3 flex-row items-start active:bg-gray-50"
+        >
+            <Image
+                source={{ uri: post.thumbnail }} // API trả về thumbnail có sẵn domain
+                className="w-24 h-24 rounded-md mr-3"
+                contentFit="cover"
+                placeholder={{ uri: 'https://via.placeholder.com/200x200/e0e0e0/999999?text=Blog' }}
+                transition={300}
+            />
+            <View className="flex-1">
+                <Text className="text-md font-semibold text-gray-800" numberOfLines={2}>{post.title}</Text>
+                <Text className="text-xs text-gray-600 mt-1" numberOfLines={3}>{createExcerpt(post.content)}</Text>
+                <Text className="text-xs text-sky-600 mt-1.5 font-medium">Đọc thêm</Text>
+            </View>
+        </TouchableOpacity>
+    );
 };
 
 const PromotionalBanner = ({ title, subtitle, imageUrl, ctaText, onPress }) => {
     return (
-        <TouchableOpacity onPress={onPress} className="mx-4 my-4 rounded-xl overflow-hidden shadow-lg aspect-[16/7]">
+        <TouchableOpacity onPress={onPress} className="mx-4 my-4 rounded-xl overflow-hidden shadow-lg aspect-[16/7] active:opacity-90">
             <Image source={{ uri: imageUrl }} className="absolute inset-0 w-full h-full" contentFit="cover" />
             <View className="absolute inset-0 bg-black/40 p-4 flex justify-end">
-                <Text className="text-white text-xl font-bold shadow-black" style={{
-                    textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2
-                }}>{title}</Text>
-                <Text className="text-gray-200 text-sm mt-0.5 shadow-black" style={{
-                    textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2
-                }}>{subtitle}</Text>
-                {ctaText && (<View className="mt-2 self-start bg-white/90 px-3 py-1.5 rounded-md shadow">
-                    <Text className="text-blue-700 font-semibold text-xs">{ctaText}</Text>
-                </View>)}
+                <Text className="text-white text-xl font-bold" style={{ textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }}>
+                    {title}
+                </Text>
+                <Text className="text-gray-200 text-sm mt-0.5" style={{ textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }}>
+                    {subtitle}
+                </Text>
+                {ctaText && (
+                    <View className="mt-2 self-start bg-white/90 px-3 py-1.5 rounded-md shadow">
+                        <Text className="text-sky-700 font-semibold text-xs">{ctaText}</Text>
+                    </View>
+                )}
             </View>
-        </TouchableOpacity>);
+        </TouchableOpacity>
+    );
 };
+
+const SectionLoading = () => (
+    <View className="h-48 justify-center items-center">
+        <ActivityIndicator size="large" color="#0EA5E9" />
+    </View>
+);
+
+const SectionError = ({ message, onRetry }) => (
+    <View className="h-48 justify-center items-center p-4 bg-red-50 rounded-md mx-4 my-2 border border-red-200">
+        <Ionicons name="alert-circle-outline" size={32} color="#EF4444" />
+        <Text className="text-red-600 text-center mt-2 mb-3">{message || "Không thể tải dữ liệu."}</Text>
+        {onRetry && (
+            <TouchableOpacity onPress={onRetry} className="bg-red-500 px-4 py-2 rounded-md">
+                <Text className="text-white font-semibold text-sm">Thử lại</Text>
+            </TouchableOpacity>
+        )}
+    </View>
+);
 
 
 function HomeScreen() {
-    // Hàm xử lý khi nhấn vào một item, bạn có thể điều hướng ở đây
-    const handleProductPress = (product) => console.log("Pressed product:", product.title);
-    const handleCategoryPress = (category) => console.log("Pressed category:", category.name);
-    const handleBlogPostPress = (post) => console.log("Pressed blog post:", post.title);
-    const handleBannerPress = () => console.log("Banner pressed");
+    const router = useRouter();
 
-    return (<ScrollView className="flex-1 bg-slate-50">
-        {/* Welcome Section */}
-        <View className="p-5 bg-sky-600">
-            <Text className="text-2xl font-bold text-white">Chào mừng trở lại!</Text>
-            <Text className="text-sm text-sky-100 mt-1">Khám phá những cuốn sách yêu thích của bạn.</Text>
-        </View>
+    const [newestProducts, setNewestProducts] = useState([]);
+    const [featuredCategories, setFeaturedCategories] = useState([]);
+    const [bestSellerProducts, setBestSellerProducts] = useState([]);
+    const [latestBlogs, setLatestBlogs] = useState([]);
 
-        {/* Promotional Banner Section */}
-        <PromotionalBanner
-            title="Ưu Đãi Mùa Hè!"
-            subtitle="Giảm giá đến 50% cho hàng ngàn đầu sách."
-            imageUrl="https://picsum.photos/seed/summerbooks/800/350"
-            ctaText="Xem Ngay"
-            onPress={handleBannerPress}
-        />
+    const [loading, setLoading] = useState({
+        newest: true,
+        categories: true,
+        bestSellers: true,
+        blogs: true,
+    });
+    const [error, setError] = useState({
+        newest: null,
+        categories: null,
+        bestSellers: null,
+        blogs: null,
+    });
 
-        {/* Featured Products Section */}
-        <View className="my-3">
-            <View className="flex-row justify-between items-center px-4 mb-1">
-                <Text className="text-xl font-semibold text-gray-800">Sách Mới Nhất</Text>
-                <TouchableOpacity onPress={() => console.log("View all new products")}>
-                    <Text className="text-sm text-blue-600 font-medium">Xem tất cả</Text>
-                </TouchableOpacity>
+    const fetchNewestProducts = async () => {
+        setLoading(prev => ({ ...prev, newest: true }));
+        setError(prev => ({ ...prev, newest: null }));
+        try {
+            const response = await productService.getActiveProducts({ sortBy: 'createdAt', sortDir: 'DESC' }, 1, 6);
+            if (response && response.status === 200 && response.result && response.result.data) {
+                setNewestProducts(response.result.data);
+            } else {
+                throw new Error(response?.message || "Không thể tải sách mới nhất");
+            }
+        } catch (err) {
+            console.error("Error fetching newest products:", err);
+            setError(prev => ({ ...prev, newest: err.message || "Lỗi tải sách mới" }));
+        } finally {
+            setLoading(prev => ({ ...prev, newest: false }));
+        }
+    };
+
+    const fetchFeaturedCategories = async () => {
+        setLoading(prev => ({ ...prev, categories: true }));
+        setError(prev => ({ ...prev, categories: null }));
+        try {
+            // Sử dụng productService.getProductCategories() vì nó có vẻ phù hợp hơn cho homepage
+            // Nếu bạn có 1 service riêng cho category với endpoint /category thì dùng categoryService.getAllCategories()
+            const response = await productService.getProductCategories(); // This is from ProductService, usually returns product-related categories
+            // API productService.getProductCategories() trả về ApiResponse<List<CategoryResponse>>.
+            // CategoryResponse có: id, name, slug, priority, parentId.
+            if (response && response.status === 200 && response.result) {
+                // Sắp xếp theo priority (nếu có) hoặc lấy 5-6 mục đầu
+                const sortedCategories = response.result
+                    .sort((a, b) => (a.priority || 0) - (b.priority || 0))
+                    .slice(0, 6);
+                setFeaturedCategories(sortedCategories);
+            } else {
+                throw new Error(response?.message || "Không thể tải danh mục");
+            }
+        } catch (err) {
+            console.error("Error fetching featured categories:", err);
+            setError(prev => ({ ...prev, categories: err.message || "Lỗi tải danh mục" }));
+        } finally {
+            setLoading(prev => ({ ...prev, categories: false }));
+        }
+    };
+
+    const fetchBestSellerProducts = async () => {
+        setLoading(prev => ({ ...prev, bestSellers: true }));
+        setError(prev => ({ ...prev, bestSellers: null }));
+        try {
+            const response = await productService.getTopRatingProducts();
+            if (response && response.status === 200 && response.result) {
+                setBestSellerProducts(response.result.slice(0, 6));
+            } else {
+                throw new Error(response?.message || "Không thể tải sách bán chạy");
+            }
+        } catch (err) {
+            console.error("Error fetching best seller products:", err);
+            setError(prev => ({ ...prev, bestSellers: err.message || "Lỗi tải sách bán chạy" }));
+        } finally {
+            setLoading(prev => ({ ...prev, bestSellers: false }));
+        }
+    };
+
+    const fetchLatestBlogs = async () => {
+        setLoading(prev => ({ ...prev, blogs: true }));
+        setError(prev => ({ ...prev, blogs: null }));
+        try {
+            const response = await blogService.getAllBlogs({ sortDirection: 'DESC' }, 1, 3);
+            // getAllBlogs trả về ApiResponse<PageResponse<BlogResponse>>
+            // BlogResponse có: id, title, thumbnail, content, priority, categoryId, slug, createdAt
+            if (response && response.status === 200 && response.result && response.result.data) {
+                setLatestBlogs(response.result.data);
+            } else {
+                throw new Error(response?.message || "Không thể tải bài viết mới");
+            }
+        } catch (err) {
+            console.error("Error fetching latest blogs:", err);
+            setError(prev => ({ ...prev, blogs: err.message || "Lỗi tải bài viết" }));
+        } finally {
+            setLoading(prev => ({ ...prev, blogs: false }));
+        }
+    };
+
+    useEffect(() => {
+        fetchNewestProducts();
+        fetchFeaturedCategories();
+        fetchBestSellerProducts();
+        fetchLatestBlogs();
+    }, []);
+
+    const handleProductPress = (product) => router.push(`/(app)/product/${product.id}`);
+    const handleCategoryPress = (category) => router.push(`/(app)/product?category_id=${category.id}&category_name=${encodeURIComponent(category.name)}`);
+    const handleBlogPostPress = (post) => router.push(`/(app)/blog/${post.id || post.id}`);
+    const handleBannerPress = () => Alert.alert("Khuyến mãi", "Xem chi tiết các chương trình khuyến mãi (đang phát triển).");
+
+
+    return (
+        <ScrollView className="flex-1 bg-slate-50" showsVerticalScrollIndicator={false}>
+            {/* Welcome Section */}
+            <View className="p-5 bg-sky-600">
+                <Text className="text-2xl font-bold text-white">Chào mừng trở lại!</Text>
+                <Text className="text-sm text-sky-100 mt-1">Khám phá những cuốn sách yêu thích của bạn.</Text>
             </View>
-            <FlatList
-                data={fakeProducts.slice(0, 6)}
-                renderItem={({ item }) => <ProductCard product={item} />}
-                keyExtractor={item => item.product_id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8 }}
+
+            {/* Promotional Banner Section */}
+            <PromotionalBanner
+                title="Ưu Đãi Giữa Năm!"
+                subtitle="Giảm giá đến 50% cho hàng ngàn đầu sách."
+                imageUrl="https://picsum.photos/seed/midyearbooks/800/350"
+                ctaText="Xem Ngay"
+                onPress={handleBannerPress}
             />
-        </View>
 
-        {/* Categories Section */}
-        <View className="my-3">
-            <View className="flex-row justify-between items-center px-4 mb-1">
-                <Text className="text-xl font-semibold text-gray-800">Danh Mục Nổi Bật</Text>
-                <TouchableOpacity onPress={() => console.log("View all categories")}>
-                    <Text className="text-sm text-blue-600 font-medium">Xem tất cả</Text>
-                </TouchableOpacity>
+            {/* Featured Products Section */}
+            <View className="my-3">
+                <View className="flex-row justify-between items-center px-4 mb-1">
+                    <Text className="text-xl font-semibold text-gray-800">Sách Mới Nhất</Text>
+                    <TouchableOpacity onPress={() => router.push('/(app)/product/')}>
+                        <Text className="text-sm text-sky-600 font-medium">Xem tất cả</Text>
+                    </TouchableOpacity>
+                </View>
+                {loading.newest ? <SectionLoading /> : error.newest ? <SectionError message={error.newest} onRetry={fetchNewestProducts} /> : (
+                    <FlatList
+                        data={newestProducts}
+                        renderItem={({ item }) => <ProductCard product={item} onPress={() => handleProductPress(item)} />}
+                        keyExtractor={item => item.id.toString()}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8 }}
+                    />
+                )}
             </View>
-            <FlatList
-                data={fakeCategories}
-                renderItem={({ item }) => <CategoryChip category={item} onPress={() => handleCategoryPress(item)} />}
-                keyExtractor={item => item.category_id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8 }}
-            />
-        </View>
 
-        {/* Best Sellers Section (Ví dụ thêm) */}
-        <View className="my-3">
-            <View className="flex-row justify-between items-center px-4 mb-1">
-                <Text className="text-xl font-semibold text-gray-800">Sách Bán Chạy</Text>
-                <TouchableOpacity onPress={() => console.log("View all best sellers")}>
-                    <Text className="text-sm text-blue-600 font-medium">Xem tất cả</Text>
-                </TouchableOpacity>
+            {/* Categories Section */}
+            <View className="my-3">
+                <View className="flex-row justify-between items-center px-4 mb-1">
+                    <Text className="text-xl font-semibold text-gray-800">Danh Mục Nổi Bật</Text>
+                    <TouchableOpacity onPress={() => router.push('/(app)/product/')}>
+                        <Text className="text-sm text-sky-600 font-medium">Xem tất cả</Text>
+                    </TouchableOpacity>
+                </View>
+                {loading.categories ? <SectionLoading /> : error.categories ? <SectionError message={error.categories} onRetry={fetchFeaturedCategories} /> : (
+                    <FlatList
+                        data={featuredCategories}
+                        renderItem={({ item }) => <CategoryChip category={item} onPress={() => handleCategoryPress(item)} />}
+                        keyExtractor={item => item.id.toString()}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8 }}
+                    />
+                )}
             </View>
-            <FlatList
-                data={[...fakeProducts].sort((a, b) => b.average_rating - a.average_rating).slice(0, 6)} // Sắp xếp theo rating
-                renderItem={({ item }) => <ProductCard product={item} />}
-                keyExtractor={item => `bestseller_${item.product_id}`}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8 }}
-            />
-        </View>
 
-
-        {/* Latest Blog Posts Section */}
-        <View className="my-3 pb-4">
-            <View className="flex-row justify-between items-center px-4 mb-2">
-                <Text className="text-xl font-semibold text-gray-800">Tin Tức & Bài Viết</Text>
-                <TouchableOpacity onPress={() => console.log("View all blog posts")}>
-                    <Text className="text-sm text-blue-600 font-medium">Xem tất cả</Text>
-                </TouchableOpacity>
+            {/* Best Sellers Section */}
+            <View className="my-3">
+                <View className="flex-row justify-between items-center px-4 mb-1">
+                    <Text className="text-xl font-semibold text-gray-800">Sách Bán Chạy</Text>
+                    <TouchableOpacity onPress={() => router.push('/(app)/product?sort_by=top_rating')}>
+                        <Text className="text-sm text-sky-600 font-medium">Xem tất cả</Text>
+                    </TouchableOpacity>
+                </View>
+                {loading.bestSellers ? <SectionLoading /> : error.bestSellers ? <SectionError message={error.bestSellers} onRetry={fetchBestSellerProducts} /> : (
+                    <FlatList
+                        data={bestSellerProducts}
+                        renderItem={({ item }) => <ProductCard product={item} onPress={() => handleProductPress(item)} />}
+                        keyExtractor={item => `bestseller_${item.id.toString()}`}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8 }}
+                    />
+                )}
             </View>
-            {fakeBlogs.map(post => (
-                <BlogPostItem key={post.blog_id} post={post} onPress={() => handleBlogPostPress(post)} />))}
-        </View>
-    </ScrollView>);
+
+            {/* Latest Blog Posts Section */}
+            <View className="my-3 pb-4">
+                <View className="flex-row justify-between items-center px-4 mb-2">
+                    <Text className="text-xl font-semibold text-gray-800">Tin Tức & Bài Viết</Text>
+                    <TouchableOpacity onPress={() => router.push('/(app)/blog/')}>
+                        <Text className="text-sm text-sky-600 font-medium">Xem tất cả</Text>
+                    </TouchableOpacity>
+                </View>
+                {loading.blogs ? <SectionLoading /> : error.blogs ? <SectionError message={error.blogs} onRetry={fetchLatestBlogs} /> : (
+                    latestBlogs.map(post => (
+                        <BlogPostItem key={post.id.toString()} post={post} onPress={() => handleBlogPostPress(post)} />
+                    ))
+                )}
+            </View>
+        </ScrollView>
+    );
 }
 
 export default HomeScreen;

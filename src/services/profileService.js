@@ -54,7 +54,7 @@ const profileService = {
     createShippingProfile: async (profileData) => {
         // profileData: { fullName, phone, address, gender ("MALE" | "FEMALE") }
         try {
-            const response = await api.post('/profile', profileData);
+            const response = await api.post('/profile/', profileData);
             return response; // ApiResponse<ProfileResponse>
         } catch (error) {
             console.error('Create shipping profile failed:', error.message || error);

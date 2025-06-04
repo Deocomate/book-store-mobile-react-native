@@ -1,7 +1,7 @@
 /* ==========================================================
-   CODEBASE SNAPSHOT - 2025-06-02 09:59:23
+   CODEBASE SNAPSHOT - 2025-06-04 14:08:35
    Project: microservice
-   Files: 409 (409 text, 0 binary)
+   Files: 421 (421 text, 0 binary)
    Ignored Items: 94
    ========================================================== */
 
@@ -72,6 +72,8 @@
    │   │   │   │           │   │   └── CategoryController.java
    │   │   │   │           │   ├── converter/
    │   │   │   │           │   │   └── StringConverter.java
+   │   │   │   │           │   ├── custom/
+   │   │   │   │           │   │   └── FilePathMultipartFile.java
    │   │   │   │           │   ├── dto/
    │   │   │   │           │   │   ├── request/
    │   │   │   │           │   │   │   ├── BlogfilterRequest.java
@@ -110,6 +112,8 @@
    │   │   │   │           │   │   ├── CategoryService.java
    │   │   │   │           │   │   ├── FileUploadService.java
    │   │   │   │           │   │   └── SlugService.java
+   │   │   │   │           │   ├── utils/
+   │   │   │   │           │   │   └── FileUtils.java
    │   │   │   │           │   └── BlogServiceApplication.java
    │   │   │   │           └── event/
    │   │   │   │               └── dto/
@@ -142,6 +146,7 @@
    │   │   │   │               │   ├── JwtAuthenticationEntryPoint.java
    │   │   │   │               │   └── SecurityConfig.java
    │   │   │   │               ├── controller/
+   │   │   │   │               │   ├── CartController.java
    │   │   │   │               │   ├── CartProductController.java
    │   │   │   │               │   └── InternalCartController.java
    │   │   │   │               ├── dto/
@@ -351,7 +356,6 @@
    │   ├── mvnw.cmd
    │   └── pom.xml
    ├── identity-service/
-   │   ├── .codebase/
    │   ├── .mvn/
    │   ├── public/
    │   │   ├── permissions.sql
@@ -456,7 +460,6 @@
    │   ├── mvnw.cmd
    │   └── pom.xml
    ├── notification-service/
-   │   ├── .codebase/
    │   ├── .mvn/
    │   ├── src/
    │   │   ├── main/
@@ -485,6 +488,8 @@
    │   │   │   │               │   ├── FcmTokenResponse.java
    │   │   │   │               │   ├── NotificationRequest.java
    │   │   │   │               │   ├── NotificationResponse.java
+   │   │   │   │               │   ├── NotificationResponseToUser.java
+   │   │   │   │               │   ├── PageResponse.java
    │   │   │   │               │   ├── Recipient.java
    │   │   │   │               │   ├── SendEmailRequest.java
    │   │   │   │               │   └── Sender.java
@@ -540,6 +545,8 @@
    │   │   │   │           │       ├── PaymentCreateEvent.java
    │   │   │   │           │       ├── ProductEvent.java
    │   │   │   │           │       ├── ProfileCreateEvent.java
+   │   │   │   │           │       ├── ProfileDeleteEvent.java
+   │   │   │   │           │       ├── ProfileUpdateEvent.java
    │   │   │   │           │       └── UserCreateEvent.java
    │   │   │   │           └── orderservice/
    │   │   │   │               ├── config/
@@ -572,7 +579,8 @@
    │   │   │   │               │   ├── AppException.java
    │   │   │   │               │   └── GlobalExceptionHandler.java
    │   │   │   │               ├── mapper/
-   │   │   │   │               │   └── OrderMapper.java
+   │   │   │   │               │   ├── OrderMapper.java
+   │   │   │   │               │   └── OrderProductMapper.java
    │   │   │   │               ├── repository/
    │   │   │   │               │   ├── OrderProductRepository.java
    │   │   │   │               │   ├── OrderRepository.java
@@ -680,6 +688,8 @@
    │   │   │   │               │   └── RateController.java
    │   │   │   │               ├── converter/
    │   │   │   │               │   └── StringConverter.java
+   │   │   │   │               ├── custom/
+   │   │   │   │               │   └── FilePathMultipartFile.java
    │   │   │   │               ├── dto/
    │   │   │   │               │   ├── request/
    │   │   │   │               │   │   ├── CategoryRequest.java
@@ -726,6 +736,8 @@
    │   │   │   │               │   ├── ProductService.java
    │   │   │   │               │   ├── RateService.java
    │   │   │   │               │   └── SlugService.java
+   │   │   │   │               ├── utils/
+   │   │   │   │               │   └── FileUtils.java
    │   │   │   │               └── ProductServiceApplication.java
    │   │   │   └── resources/
    │   │   │       ├── application-sample.yml
@@ -752,7 +764,9 @@
    │   │   │   │       └── hau/
    │   │   │   │           ├── event/
    │   │   │   │           │   └── dto/
-   │   │   │   │           │       └── ProfileCreateEvent.java
+   │   │   │   │           │       ├── ProfileCreateEvent.java
+   │   │   │   │           │       ├── ProfileDeleteEvent.java
+   │   │   │   │           │       └── ProfileUpdateEvent.java
    │   │   │   │           └── profile_service/
    │   │   │   │               ├── config/
    │   │   │   │               │   ├── CustomJwtDecoder.java
@@ -795,7 +809,9 @@
    │   ├── mvnw
    │   ├── mvnw.cmd
    │   └── pom.xml
-   └── .gitignore
+   ├── .gitignore
+   ├── hs_err_pid3760.log
+   └── replay_pid3760.log
    ------------------------------------------------------------ */
 
 /* ===== api-gateway\src\main\java\com\hau\apigateway\ApiGatewayApplication.java ===== */
@@ -973,7 +989,7 @@ public class WebClientConfiguration {
     CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();
         corsConfiguration.setAllowedOrigins(List.of("*"));
-        corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        corsConfiguration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         corsConfiguration.setAllowedHeaders(List.of("*"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -1093,25 +1109,85 @@ public class IdentityService {
 
 /* ===== api-gateway\src\main\resources\application-sample.yml ===== */
 server:
-  port: 8086
-  servlet:
-    context-path: /customer
+  port: 8888
+
+app:
+  api-prefix: /api/v1
+  identity-service:
+    url: http://localhost:8080/identity
 
 spring:
-  main:
-    lazy-initialization: true
-  datasource:
-    url: jdbc:postgresql://localhost:5432/customer_db
-    username: postgres
-    password: postgres
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: identity_service
+          uri: http://localhost:8080
+          predicates:
+            - Path=${app.api-prefix}/identity/**
+          filters:
+            - StripPrefix=2
+        - id: profile_service
+          uri: http://localhost:8081
+          predicates:
+            - Path=${app.api-prefix}/profile/**
+          filters:
+            - StripPrefix=2
+        - id: product_service
+          uri: http://localhost:8082
+          predicates:
+            - Path=${app.api-prefix}/product/**
+          filters:
+            - StripPrefix=2
+        - id: cart_service
+          uri: http://localhost:8083
+          predicates:
+            - Path=${app.api-prefix}/cart/**
+          filters:
+            - StripPrefix=2
+        - id: category_service
+          uri: http://localhost:8084
+          predicates:
+            - Path=${app.api-prefix}/category/**
+          filters:
+            - StripPrefix=2
+        - id: blog_service
+          uri: http://localhost:8085
+          predicates:
+            - Path=${app.api-prefix}/blog/**
+          filters:
+            - StripPrefix=2
+        - id: customer_service
+          uri: http://localhost:8086
+          predicates:
+            - Path=${app.api-prefix}/customer/**
+          filters:
+            - StripPrefix=2
+        - id: file_service
+          uri: http://localhost:8087
+          predicates:
+            - Path=${app.api-prefix}/file/**
+          filters:
+            - StripPrefix=2
+        - id: notification_service
+          uri: http://localhost:8088
+          predicates:
+            - Path=${app.api-prefix}/notification/**
+          filters:
+            - StripPrefix=2
+        - id: payment_service
+          uri: http://localhost:8089
+          predicates:
+            - Path=${app.api-prefix}/payment/**
+          filters:
+            - StripPrefix=2
+        - id: order_service
+          uri: http://localhost:8090
+          predicates:
+            - Path=${app.api-prefix}/order/**
+          filters:
+            - StripPrefix=2
 
 /* ===== api-gateway\src\main\resources\application.yml ===== */
 server:
@@ -1425,6 +1501,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+
 @RestController
 @RequiredArgsConstructor
 public class BlogController {
@@ -1454,10 +1532,17 @@ public class BlogController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+//    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+//    @PostMapping
+//    public ResponseEntity<ApiResponse<BlogResponse>> createBlog(@RequestBody @Valid BlogRequest request) throws IOException {
+//        ApiResponse<BlogResponse> response = blogService.createBlog(request);
+//        return new ResponseEntity<>(response, HttpStatus.CREATED);
+//    }
+
     @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<BlogResponse>> updateBlog(@PathVariable Long id, @RequestPart("blog") @Valid BlogRequest request,
-                                                                @RequestPart(value = "thumbnail") MultipartFile thumbnail) {
+                                                                @RequestPart(value = "thumbnail") MultipartFile thumbnail) throws IOException {
         ApiResponse<BlogResponse> response = blogService.updateBlog(id, request, thumbnail);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
@@ -1523,6 +1608,75 @@ public class StringConverter {
 }
 
 
+/* ===== blog-service\src\main\java\com\hau\blogService\custom\FilePathMultipartFile.java ===== */
+package com.hau.blogService.custom;
+
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+
+public class FilePathMultipartFile implements MultipartFile {
+    private final File file;
+    private final String contentType;
+
+    public FilePathMultipartFile(String filePath) throws IOException {
+        this.file = new File(filePath);
+        this.contentType = Files.probeContentType(file.toPath());
+    }
+
+    @Override
+    @NonNull
+    public String getName() {
+        return file.getName();
+    }
+
+    @Override
+    @Nullable
+    public String getOriginalFilename() {
+        return file.getName();
+    }
+
+    @Override
+    @Nullable
+    public String getContentType() {
+        return this.contentType;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return file.length() == 0;
+    }
+
+    @Override
+    public long getSize() {
+        return file.length();
+    }
+
+    @Override
+    @NonNull
+    public byte[] getBytes() throws IOException {
+        return Files.readAllBytes(file.toPath());
+    }
+
+    @Override
+    @NonNull
+    public InputStream getInputStream() throws IOException {
+        return new FileInputStream(file);
+    }
+
+    @Override
+    public void transferTo(@NonNull File dest) throws IOException, IllegalStateException {
+        Files.copy(file.toPath(), dest.toPath());
+    }
+}
+
+
 /* ===== blog-service\src\main\java\com\hau\blogService\dto\request\BlogfilterRequest.java ===== */
 package com.hau.blogService.dto.request;
 
@@ -1564,6 +1718,8 @@ public class BlogRequest {
     private Integer priority;
     @NotNull(message = "Category ID không được để trống")
     private Long categoryId;
+//    @NotNull(message = "Thumbnail không được để trống")
+//    private String thumbnail;
 }
 
 
@@ -2086,7 +2242,10 @@ import com.hau.blogService.dto.response.BlogResponse;
 import com.hau.blogService.dto.response.PageResponse;
 import org.springframework.web.multipart.MultipartFile;
 
+
 public interface BlogService {
+//    ApiResponse<BlogResponse> createBlog(BlogRequest request) throws IOException;
+//    ApiResponse<BlogResponse> updateBlog(Long id, BlogRequest request) throws IOException;
     ApiResponse<BlogResponse> createBlog(BlogRequest request, MultipartFile thumbnail);
     ApiResponse<BlogResponse> updateBlog(Long id, BlogRequest request, MultipartFile thumbnail);
     ApiResponse<Void> deleteBlog(Long id);
@@ -2247,7 +2406,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.time.LocalDateTime;
 
 import java.util.List;
@@ -2296,6 +2454,39 @@ public class BlogServiceImpl implements BlogService {
                 .build();
     }
 
+//    @Transactional
+//    @Override
+//    public ApiResponse<BlogResponse> createBlog(BlogRequest request) throws IOException {
+//        MultipartFile thumbnail = FileUtils.convertPathToMultipartFile(request.getThumbnail());
+//
+//        if(thumbnail.isEmpty()) {
+//            throw new AppException(HttpStatus.BAD_REQUEST, "Thumbnail không được để trống", null);
+//        }
+//
+//        Blog blog = blogMapper.toBlog(request);
+//
+//        Category category = categoryRepository.findById(request.getCategoryId())
+//                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy danh mục với id: " + request.getCategoryId(), null));
+//
+//        blog.setCategory(category);
+//        String thumbnailUrl = fileUploadService.uploadFileAndGetUrl(thumbnail, "blog/thumbnails");
+//        blog.setThumbnail(thumbnailUrl);
+//        blog.setSlug(StringConverter.toSlug(blog.getTitle()));
+//        Blog savedBlog = blogRepository.save(blog);
+//        blog.setSlug(slugService.generateUniqueSlug(savedBlog.getTitle(), savedBlog.getId()));
+//        savedBlog = blogRepository.save(savedBlog);
+//        BlogResponse response = blogMapper.toBlogResponse(savedBlog);
+//
+//
+//
+//        return ApiResponse.<BlogResponse>builder()
+//                .status(HttpStatus.CREATED.value())
+//                .message("Tạo blog thành công")
+//                .result(response)
+//                .timestamp(LocalDateTime.now())
+//                .build();
+//    }
+
     @Transactional
     @Override
     public ApiResponse<BlogResponse> updateBlog(Long id, BlogRequest request, MultipartFile thumbnail) {
@@ -2318,6 +2509,31 @@ public class BlogServiceImpl implements BlogService {
                 .timestamp(LocalDateTime.now())
                 .build();
     }
+
+//    @Transactional
+//    @Override
+//    public ApiResponse<BlogResponse> updateBlog(Long id, BlogRequest request) throws IOException {
+//        Blog blog = blogRepository.findById(id)
+//                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Không tìm thấy blog với id: " + id, null));
+//
+//        MultipartFile thumbnail = FileUtils.convertPathToMultipartFile(request.getThumbnail());
+//
+//        if(!thumbnail.isEmpty()) {
+//            String thumbnailUrl = fileUploadService.uploadFileAndGetUrl(thumbnail, "blog/thumbnails");
+//            blog.setThumbnail(thumbnailUrl);
+//        }
+//        Blog updatedBlog = blogMapper.toBlogUpdateFromRequest(request, blog);
+//        blog.setSlug(slugService.generateUniqueSlug(updatedBlog.getTitle(), id));
+//        blogRepository.save(updatedBlog);
+//        BlogResponse response = blogMapper.toBlogResponse(updatedBlog);
+//
+//        return ApiResponse.<BlogResponse>builder()
+//                .status(HttpStatus.OK.value())
+//                .message("Cập nhật blog thành công")
+//                .result(response)
+//                .timestamp(LocalDateTime.now())
+//                .build();
+//    }
 
     @Transactional
     @Override
@@ -2552,6 +2768,31 @@ public class SlugServiceImpl implements SlugService {
     }
 
 }
+
+
+/* ===== blog-service\src\main\java\com\hau\blogService\utils\FileUtils.java ===== */
+package com.hau.blogService.utils;
+
+import com.hau.blogService.custom.FilePathMultipartFile;
+import com.hau.blogService.exception.AppException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+
+public class FileUtils {
+
+    public static MultipartFile convertPathToMultipartFile(String path) throws IOException {
+        File f = new File(path);
+        if(!f.isFile()) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "File không hợp lệ", null);
+        }
+        return new FilePathMultipartFile(path);
+    }
+
+}
+
 
 
 /* ===== blog-service\src\main\java\com\hau\event\dto\CategoryEvent.java ===== */
@@ -2823,6 +3064,36 @@ public class SecurityConfig {
     }
 }
 
+/* ===== cart-service\src\main\java\com\hau\cartservice\controller\CartController.java ===== */
+package com.hau.cartservice.controller;
+
+import com.hau.cartservice.dto.ApiResponse;
+import com.hau.cartservice.dto.CartResponse;
+import com.hau.cartservice.service.CartService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.time.LocalDateTime;
+
+@RestController
+@RequiredArgsConstructor
+public class CartController {
+    private final CartService cartService;
+
+    @GetMapping
+    public ApiResponse<CartResponse> getMyCart() {
+        CartResponse cartResponse = cartService.getMyCart();
+        return ApiResponse.<CartResponse>builder()
+                .status(200)
+                .message("Lấy thông tin giỏ hàng thành công")
+                .result(cartResponse)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+}
+
+
 /* ===== cart-service\src\main\java\com\hau\cartservice\controller\CartProductController.java ===== */
 package com.hau.cartservice.controller;
 
@@ -2976,10 +3247,13 @@ public class CartProductResponse {
 /* ===== cart-service\src\main\java\com\hau\cartservice\dto\CartResponse.java ===== */
 package com.hau.cartservice.dto;
 
+import com.hau.cartservice.entity.CartProduct;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -2988,6 +3262,7 @@ import lombok.NoArgsConstructor;
 public class CartResponse {
     private Integer id;
     private Integer userId;
+    private List<CartProduct> cartProducts;
 }
 
 
@@ -3233,6 +3508,7 @@ import com.hau.cartservice.dto.CartCreateRequest;
 import com.hau.cartservice.dto.CartResponse;
 import com.hau.cartservice.entity.Cart;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface CartMapper {
@@ -3278,8 +3554,11 @@ import com.hau.cartservice.entity.Cart;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public interface CartRepository extends JpaRepository<Cart, Integer> {
+    Optional<Cart> findByUserId(Integer userId);
 }
 
 
@@ -3369,10 +3648,12 @@ import com.hau.cartservice.dto.ApiResponse;
 import com.hau.cartservice.dto.CartCreateRequest;
 import com.hau.cartservice.dto.CartResponse;
 import com.hau.cartservice.entity.Cart;
+import com.hau.cartservice.exception.AppException;
 import com.hau.cartservice.mapper.CartMapper;
 import com.hau.cartservice.repository.CartRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -3392,6 +3673,14 @@ public class CartService {
                 .result(null)
                 .timestamp(LocalDateTime.now())
                 .build();
+    }
+
+    public CartResponse getMyCart() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.valueOf(authentication.getName());
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Giỏ hàng không tồn tại", null));
+        return cartMapper.toCartResponse(cart);
     }
 }
 
@@ -5047,6 +5336,10 @@ public class HomePage {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
+
+    String thumbnail1;
+    String thumbnail2;
+    String thumbnail3;
 }
 
 
@@ -6096,11 +6389,11 @@ spring:
       uri: mongodb://root:123456789@localhost:27017/file_db?authSource=admin
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      max-file-size: 100MB
+      max-request-size: 100MB
 app:
   file:
-    storage-dir: D:/Uploads
+    storage-dir: D:/HAU/lap_trinh_mobile/Uploads
 
 /* ===== file-service\src\test\java\com\hau\fileservice\FileServiceApplicationTests.java ===== */
 package com.hau.fileservice;
@@ -11237,10 +11530,12 @@ public class UserService {
             }
 
             userRepository.save(user);
+            UserResponse userResponse = userMapper.toUserResponse(user);
+            userResponse.setProfileImage(fileDownloadPrefix + user.getProfileImage());
             return ApiResponse.<UserResponse>builder()
                     .status(HttpStatus.OK.value())
                     .message("Cập nhật ảnh đại diện thành công")
-                    .result(null)
+                    .result(userResponse)
                     .timestamp(LocalDateTime.now())
                     .build();
 
@@ -11320,10 +11615,12 @@ public class UserService {
         User user = findUserById(Long.valueOf(authentication.getName()));
         user.setEmail(userUpdateInfoRequest.getEmail());
         userRepository.save(user);
+        UserResponse userResponse = userMapper.toUserResponse(user);
+        userResponse.setProfileImage(fileDownloadPrefix + user.getProfileImage());
         return ApiResponse.<UserResponse>builder()
                 .status(HttpStatus.OK.value())
                 .message("Cập nhật thông tin user thành công")
-                .result(null)
+                .result(userResponse)
                 .timestamp(LocalDateTime.now())
                 .build();
     }
@@ -11526,7 +11823,7 @@ app:
   file-service:
     url: http://localhost:8087
   file:
-    download-prefix: http://localhost:8888/api/v1/file/media/download/
+    download-prefix: http://172.20.64.1:8888/api/v1/file/media/download/
     default-image: 6b1cb0f1-8bb4-4c15-a71e-937f588abca3_avatar.jpg
 
 admin:
@@ -11871,16 +12168,14 @@ public class NotificationController {
 /* ===== notification-service\src\main\java\com\hau\notificationservice\controller\NotificationFirebaseController.java ===== */
 package com.hau.notificationservice.controller;
 
-import com.hau.notificationservice.dto.NotificationRequest;
-import com.hau.notificationservice.dto.NotificationResponse;
+import com.hau.notificationservice.dto.*;
 import com.hau.notificationservice.service.FCMService;
+import com.hau.notificationservice.service.NotificationProcessingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11890,6 +12185,7 @@ import java.util.List;
 @Slf4j
 public class NotificationFirebaseController {
     private final FCMService fcmService;
+    private final NotificationProcessingService notificationProcessingService;
 
     @PostMapping("/firebase")
     public ResponseEntity sendNotification(@RequestBody NotificationRequest request) {
@@ -11901,6 +12197,16 @@ public class NotificationFirebaseController {
 
         fcmService.sendMessageToTokens(request);
         return new ResponseEntity<>(new NotificationResponse(HttpStatus.OK.value(), "Thông báo đã được gửi."), HttpStatus.OK);
+    }
+
+    @GetMapping("my-notification")
+    public ResponseEntity<ApiResponse<PageResponse<NotificationResponseToUser>>> getMyNotifications(
+            @RequestParam(required = false, defaultValue = "1") int pageIndex,
+            @RequestParam(required = false, defaultValue = "10") int pageSize
+    ) {
+        ApiResponse<PageResponse<NotificationResponseToUser>> response = notificationProcessingService.notificationResponseToUser(pageIndex, pageSize);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+
     }
 }
 
@@ -12043,6 +12349,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Data
 public class NotificationRequest {
+    private Integer userId;
     private String title;
     private String body;
     private String topic;
@@ -12068,6 +12375,55 @@ import lombok.NoArgsConstructor;
 public class NotificationResponse {
     private int status;
     private String message;
+}
+
+
+/* ===== notification-service\src\main\java\com\hau\notificationservice\dto\NotificationResponseToUser.java ===== */
+package com.hau.notificationservice.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+import java.util.Map;
+
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+public class NotificationResponseToUser {
+    private Integer userId;
+    private String title;
+    private String body;
+    private String topic;
+    private Map<String, String> data;
+}
+
+/* ===== notification-service\src\main\java\com\hau\notificationservice\dto\PageResponse.java ===== */
+package com.hau.notificationservice.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Collections;
+import java.util.List;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PageResponse<T> {
+    private int currentPage;
+    private int totalPages;
+    private long totalElements;
+    private int pageSize;
+
+    @Builder.Default
+    private List<T> data = Collections.emptyList();
 }
 
 
@@ -12172,6 +12528,7 @@ public class Notification {
     @MongoId
     private String id;
 
+    private Integer userId;
     private String title;
     private String body;
     private String topic;
@@ -12308,12 +12665,15 @@ public class GlobalExceptionHandler {
 package com.hau.notificationservice.mapper;
 
 import com.hau.notificationservice.dto.NotificationRequest;
+import com.hau.notificationservice.dto.NotificationResponseToUser;
 import com.hau.notificationservice.entity.Notification;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface NotificationMapper {
     Notification toNotification(NotificationRequest notificationRequest);
+
+    NotificationResponseToUser toNotificationResponseToUser(Notification notification);
 }
 
 
@@ -12355,11 +12715,14 @@ public interface FcmTokenRepository extends MongoRepository<FcmToken, String> {
 package com.hau.notificationservice.repository;
 
 import com.hau.notificationservice.entity.Notification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface NotificationRepository extends MongoRepository<Notification, String> {
+    Page<Notification> findNotificationByUserId(Integer userId, Pageable pageable);
 }
 
 
@@ -12585,15 +12948,24 @@ public class FcmTokenService {
 package com.hau.notificationservice.service;
 
 import com.hau.event.dto.NotificationEvent;
+import com.hau.notificationservice.dto.ApiResponse;
 import com.hau.notificationservice.dto.NotificationRequest;
+import com.hau.notificationservice.dto.NotificationResponseToUser;
+import com.hau.notificationservice.dto.PageResponse;
 import com.hau.notificationservice.entity.FcmToken;
 import com.hau.notificationservice.entity.Notification;
 import com.hau.notificationservice.mapper.NotificationMapper;
 import com.hau.notificationservice.repository.FcmTokenRepository;
 import com.hau.notificationservice.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12617,8 +12989,9 @@ public class NotificationProcessingService {
         Map<String, String> data = new HashMap<>();
         data.put("orderId", notificationEvent.getParams().get("orderId").toString());
         NotificationRequest notificationRequest = NotificationRequest.builder()
+                .userId(userId)
                 .topic("order created")
-                .title("Đặt hàng thành công")
+                .title("Chúc mừng bạn đã đặt hàng thành công")
                 .body("Đơn hàng của bạn đã được đặt thành công với mã đơn hàng: " + notificationEvent.getParams().get("orderId"))
                 .tokens(tokensToSend)
                 .data(data)
@@ -12643,6 +13016,7 @@ public class NotificationProcessingService {
         String notificationBody = getNotificationBody(oderStatus);
 
         NotificationRequest notificationRequest = NotificationRequest.builder()
+                .userId(userId)
                 .topic("order updated")
                 .title("Cập nhật trạng thái đơn hàng")
                 .body(notificationBody)
@@ -12652,6 +13026,33 @@ public class NotificationProcessingService {
         Notification notification = notificationMapper.toNotification(notificationRequest);
         notificationRepository.save(notification);
         fcmService.sendMessageToTokens(notificationRequest);
+    }
+
+    public ApiResponse<PageResponse<NotificationResponseToUser>> notificationResponseToUser(int pageIndex, int pageSize) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.valueOf(authentication.getName());
+
+        Sort sort = Sort.by("createdAt").descending();
+        Pageable pageable = PageRequest.of(pageIndex - 1, pageSize, sort);
+        Page<Notification> notifications = notificationRepository.findNotificationByUserId(userId, pageable);
+
+        List<NotificationResponseToUser> notificationResponses = notifications.stream()
+                .map(notificationMapper::toNotificationResponseToUser)
+                .toList();
+        return ApiResponse.<PageResponse<NotificationResponseToUser>>builder()
+                .status(200)
+                .message("Lấy thông báo thành công")
+                .result(
+                        PageResponse.<NotificationResponseToUser>builder()
+                                .data(notificationResponses)
+                                .currentPage(pageIndex)
+                                .pageSize(pageSize)
+                                .totalElements(notifications.getTotalElements())
+                                .totalPages(notifications.getTotalPages())
+                                .build()
+                )
+                .timestamp(LocalDateTime.now())
+                .build();
     }
 
     private static String getNotificationBody(Integer oderStatus) {
@@ -14109,6 +14510,7 @@ public class ProductEvent {
     private Integer price;
     private Integer quantity;
     private String title;
+    private String thumbnail;
 }
 
 
@@ -14125,6 +14527,44 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProfileCreateEvent {
+    private Long id;
+    private Integer userId;
+    private String fullName;
+    private String phone;
+    private String address;
+}
+
+
+/* ===== order-service\src\main\java\com\hau\event\dto\ProfileDeleteEvent.java ===== */
+package com.hau.event.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProfileDeleteEvent {
+    private Long id;
+}
+
+
+/* ===== order-service\src\main\java\com\hau\event\dto\ProfileUpdateEvent.java ===== */
+package com.hau.event.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProfileUpdateEvent {
     private Long id;
     private Integer userId;
     private String fullName;
@@ -14427,6 +14867,8 @@ public class ProductController {
 package com.hau.orderservice.controller;
 
 import com.hau.event.dto.ProfileCreateEvent;
+import com.hau.event.dto.ProfileDeleteEvent;
+import com.hau.event.dto.ProfileUpdateEvent;
 import com.hau.orderservice.service.ProfileService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14440,8 +14882,17 @@ public class ProfileController {
     private final ProfileService profileService;
     @KafkaListener(topics = "profile-create-event")
     public void handleProfileCreateEvent(ProfileCreateEvent profileCreateEvent) {
-        log.info("Received ProfileCreateEvent: {}", profileCreateEvent);
         profileService.saveProfile(profileCreateEvent);
+    }
+
+    @KafkaListener(topics = "profile-update-event")
+    public void handleProfileUpdateEvent(ProfileUpdateEvent profileUpdateEvent) {
+        profileService.updateProfile(profileUpdateEvent);
+    }
+
+    @KafkaListener(topics = "profile-delete-event")
+    public void handleProfileDeleteEvent(ProfileDeleteEvent id) {
+        profileService.deleteProfile(id);
     }
 }
 
@@ -14608,7 +15059,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Set;
+import java.util.List;
 
 @Data
 @Builder
@@ -14628,7 +15079,7 @@ public class OrderResponse {
     private String note;
     private LocalDateTime createdAt;
 
-    private Set<OrderProductResponse> orderProducts;
+    private List<OrderProductResponse> orderProducts;
 }
 
 
@@ -14704,6 +15155,8 @@ public class Order {
     private String fullName;
     private String phone;
     private String address;
+    //(0: giao hàng thành công, 1: chờ xác nhận, 2: chờ đơn vị vận chuyển,
+    // 3: đang vận chuyển, 4: đã giao, 5: đã huỷ)
     private Integer status;
     private Integer paymentMethod;
     private Integer paymentStatus;
@@ -14739,8 +15192,12 @@ public class OrderProduct {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id", nullable = false)
     private Order order;
+
+    @ManyToOne
+    @JoinColumn(name = "product_id", nullable = false)
+    private  Product product;
+
     private Integer cartProductId;
-    private Long productId;
     private String productName;
     private Integer price;
     private Integer quantity;
@@ -14750,11 +15207,11 @@ public class OrderProduct {
 /* ===== order-service\src\main\java\com\hau\orderservice\entity\Product.java ===== */
 package com.hau.orderservice.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Builder
@@ -14770,6 +15227,12 @@ public class Product {
     private Integer quantity;
     private Integer discount;
     private Integer price;
+    private String thumbnail;
+
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderProduct> orderProducts = new ArrayList<>();
+
 }
 
 
@@ -14948,12 +15411,27 @@ import com.hau.orderservice.entity.Order;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {OrderProductMapper.class})
 public interface OrderMapper {
     @Mapping(target = "orderProducts", ignore = true)
     Order toOrder(OrderCreateRequest orderCreateRequest);
 
     OrderResponse toOrderResponse(Order order);
+}
+
+
+/* ===== order-service\src\main\java\com\hau\orderservice\mapper\OrderProductMapper.java ===== */
+package com.hau.orderservice.mapper;
+
+import com.hau.orderservice.dto.OrderProductResponse;
+import com.hau.orderservice.entity.OrderProduct;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+@Mapper(componentModel = "spring")
+public interface OrderProductMapper {
+    @Mapping(source = "product.id", target = "productId")
+    OrderProductResponse toOrderProductResponse(OrderProduct orderProduct);
 }
 
 
@@ -15101,11 +15579,11 @@ public class OrderService {
 
             // Create OrderProduct entity
             OrderProduct orderProduct = OrderProduct.builder()
-                    .productId(itemRequest.getProductId())
                     .quantity(itemRequest.getQuantity())
                     .productName(product.getTitle())
                     .price(product.getPrice())
                     .order(order)
+                    .product(product)
                     .build();
             product.setQuantity(product.getQuantity() - itemRequest.getQuantity());
             orderProductsEntitySet.add(orderProduct);
@@ -15133,7 +15611,7 @@ public class OrderService {
         return ApiResponse.<OrderResponse>builder()
                 .status(HttpStatus.CREATED.value())
                 .message("Tạo đơn hàng thành công")
-                .result(null)
+                .result(orderMapper.toOrderResponse(order))
                 .timestamp(LocalDateTime.now())
                 .build();
     }
@@ -15204,6 +15682,7 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Đơn hàng không tồn tại", null));
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
+
         return ApiResponse.<OrderResponse>builder()
                 .status(HttpStatus.OK.value())
                 .message("Lấy thông tin đơn hàng thành công")
@@ -15246,7 +15725,7 @@ public class OrderService {
                 Map.entry("createdAt", order.getCreatedAt()),
                 Map.entry("orderProducts", order.getOrderProducts().stream()
                         .map(orderProduct -> Map.of(
-                                "productId", orderProduct.getProductId(),
+                                "productId", orderProduct.getProduct().getId(),
                                 "productName", orderProduct.getProductName(),
                                 "quantity", orderProduct.getQuantity(),
                                 "price", orderProduct.getPrice()))
@@ -15350,6 +15829,7 @@ public class ProductService {
                 .price(productEvent.getPrice())
                 .quantity(productEvent.getQuantity())
                 .title(productEvent.getTitle())
+                .thumbnail(productEvent.getThumbnail())
                 .build();
         productRepository.save(product);
     }
@@ -15361,6 +15841,7 @@ public class ProductService {
         product.setDiscount(productEvent.getDiscount());
         product.setPrice(productEvent.getPrice());
         product.setTitle(productEvent.getTitle());
+        product.setThumbnail(productEvent.getThumbnail());
         productRepository.save(product);
 
     }
@@ -15371,6 +15852,8 @@ public class ProductService {
 package com.hau.orderservice.service;
 
 import com.hau.event.dto.ProfileCreateEvent;
+import com.hau.event.dto.ProfileDeleteEvent;
+import com.hau.event.dto.ProfileUpdateEvent;
 import com.hau.orderservice.entity.Profile;
 import com.hau.orderservice.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -15391,6 +15874,19 @@ public class ProfileService {
                 .build();
         profileRepository.save(profile);
 
+    }
+
+    public void updateProfile(ProfileUpdateEvent profileUpdateEvent) {
+        Profile profile = profileRepository.findById(profileUpdateEvent.getId())
+                .orElseThrow(() -> new RuntimeException("Profile not found"));
+        profile.setFullName(profileUpdateEvent.getFullName());
+        profile.setPhone(profileUpdateEvent.getPhone());
+        profile.setAddress(profileUpdateEvent.getAddress());
+        profileRepository.save(profile);
+    }
+
+    public void deleteProfile(ProfileDeleteEvent profileDeleteEvent) {
+        profileRepository.deleteById(profileDeleteEvent.getId());
     }
 }
 
@@ -15899,7 +16395,9 @@ public class Order {
 
     private Integer userId;
     private Integer totalPrice;
+    //(0: COD, 1: VNPAY, 2: MOMO)
     private Integer paymentMethod;
+    //(0: đã thanh toán, 1: chưa thanh toán, 2: đã hoàn tiền, 3: không thành công, 5: đã huỷ)
     private Integer paymentStatus;
 }
 
@@ -16589,14 +17087,14 @@ spring:
         spring.json.trusted.packages: "*"
 vnpay:
   payUrl: "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
-  returnUrl: "http://localhost:8089/payment/vnpay_return"
+  returnUrl: "http://172.20.64.1:8089/payment/vnpay_return"
   tmnCode: "TY24L0SC"
   secretKey: "OLLNHDCEMOEUUO6KJ12C1F9B9GMX4A3N"
 momo:
   partnerCode: "MOMOBKUN20180529"
-  returnUrl: "http://localhost:8089/payment/momo_return"
+  returnUrl: "http://172.20.64.1:8089/payment/momo_return"
   endpoint: "https://test-payment.momo.vn/v2/gateway/api/"
-  ipn-url: "http://localhost:8089/payment/momo_return"
+  ipn-url: "http://172.20.64.1:8089/payment/momo_return"
   accessKey: "klm05TvNBzhg7h7j"
   secretKey: "at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa"
   requestType: "payWithMethod"
@@ -19062,6 +19560,7 @@ public class ProductEvent {
     private Integer price;
     private Integer quantity;
     private String title;
+    private String thumbnail;
 }
 
 
@@ -19320,10 +19819,10 @@ import com.hau.product_service.dto.response.ProductResponse;
 import com.hau.product_service.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.kafka.shaded.com.google.protobuf.Api;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19334,6 +19833,7 @@ import java.util.List;
 public class ProductController {
     private final ProductService productService;
 
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<ProductResponse>> >getAllProduct(@ModelAttribute ProductFilter filter,
                                                                   @RequestParam(defaultValue = "1", required = false) Integer pageIndex,
@@ -19373,6 +19873,13 @@ public class ProductController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+//    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+//    @PostMapping
+//    public ResponseEntity<ApiResponse<ProductResponse>> createProduct(@RequestBody @Valid ProductRequest request) throws IOException {
+//        ApiResponse<ProductResponse> response = productService.createProduct(request);
+//        return new ResponseEntity<>(response, HttpStatus.CREATED);
+//    }
+
     // Modified for image/thumbnail update
     @PutMapping(value = "/{productId}")
     public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(
@@ -19385,12 +19892,21 @@ public class ProductController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+//    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
+//    @PutMapping(value = "/{productId}")
+//    public ResponseEntity<ApiResponse<ProductResponse>> updateProduct(@PathVariable Long productId, @RequestBody @Valid ProductRequest request) throws IOException {
+//        ApiResponse<ProductResponse> response = productService.updateProduct(productId, request);
+//        return new ResponseEntity<>(response, HttpStatus.OK);
+//    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     @DeleteMapping("/{productId}")
     public ResponseEntity<ApiResponse<ProductResponse>> deleteProduct(@PathVariable Long productId) {
         ApiResponse<ProductResponse> response = productService.deleteProduct(productId);
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     @GetMapping("/{productId}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long productId) {
         ApiResponse<ProductResponse> response = productService.getProductById(productId);
@@ -19402,6 +19918,7 @@ public class ProductController {
         productService.updateProductQuantity(notificationEvent);
     }
 
+    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     @PutMapping(value = "/active/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> updateProductStatus(@PathVariable Long id, @RequestBody Boolean active) {
         ApiResponse<ProductResponse> response = productService.updateProductStatus(id, active);
@@ -19489,6 +20006,75 @@ public class StringConverter {
         str = str.replaceAll("^-|-$", "");
 
         return str;
+    }
+}
+
+
+/* ===== product-service\src\main\java\com\hau\product_service\custom\FilePathMultipartFile.java ===== */
+package com.hau.product_service.custom;
+
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+
+public class FilePathMultipartFile implements MultipartFile {
+    private final File file;
+    private final String contentType;
+
+    public FilePathMultipartFile(String filePath) throws IOException {
+        this.file = new File(filePath);
+        this.contentType = Files.probeContentType(file.toPath());
+    }
+
+    @Override
+    @NonNull
+    public String getName() {
+        return file.getName();
+    }
+
+    @Override
+    @Nullable
+    public String getOriginalFilename() {
+        return file.getName();
+    }
+
+    @Override
+    @Nullable
+    public String getContentType() {
+        return this.contentType;
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return file.length() == 0;
+    }
+
+    @Override
+    public long getSize() {
+        return file.length();
+    }
+
+    @Override
+    @NonNull
+    public byte[] getBytes() throws IOException {
+        return Files.readAllBytes(file.toPath());
+    }
+
+    @Override
+    @NonNull
+    public InputStream getInputStream() throws IOException {
+        return new FileInputStream(file);
+    }
+
+    @Override
+    public void transferTo(@NonNull File dest) throws IOException, IllegalStateException {
+        Files.copy(file.toPath(), dest.toPath());
     }
 }
 
@@ -19615,7 +20201,6 @@ public class ProductRequest {
     @NotBlank(message = "Hình thức không được để trống") // ví dụ: Bìa mềm, Bìa cứng
     private String form;
 
-
     @NotNull(message = "Số lượng không được để trống")
     @Min(value = 0, message = "Số lượng phải >= 0")
     private Integer quantity;
@@ -19635,9 +20220,16 @@ public class ProductRequest {
     @NotBlank(message = "Mô tả không được để trống")
     private String description;
 
+//    @NotBlank(message = "Thumbnail không được để trống")
+//    @NotEmpty(message = "Thumbnail không được để trống")
+//    String thumbnail;
+//
+//    List<String> images;
+
     Boolean active;
 
     private List<Long> categoryIds;
+
 }
 
 
@@ -20703,10 +21295,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -20927,6 +21516,7 @@ public class ProductService {
                 .price(savedProduct.getPrice())
                 .quantity(savedProduct.getQuantity())
                 .title(savedProduct.getTitle())
+                .thumbnail(savedProduct.getThumbnail())
                 .build();
         kafkaTemplate.send("product-create-topic", productEvent);
         ProductResponse productResponse = productMapper.toProductResponse(savedProduct);
@@ -20940,6 +21530,65 @@ public class ProductService {
                 .build();
     }
 
+
+//    @Transactional // Ensure atomicity
+//    public ApiResponse<ProductResponse> createProduct(ProductRequest request) throws IOException {
+//        MultipartFile thumbnail = FileUtils.convertPathToMultipartFile(request.getThumbnail());
+//        List<MultipartFile> images = new ArrayList<>();
+//        if(request.getImages() != null) {
+//            images = FileUtils.convertPathsToMultipartFiles(request.getImages());
+//        }
+//
+//        if(!thumbnail.getResource().isFile()) {
+//            throw new AppException(HttpStatus.BAD_REQUEST, "Không đúng định dạng file, hoặc đường dẫn", null);
+//        }
+//
+////        if (images.isEmpty()) {
+////            throw new AppException(HttpStatus.BAD_REQUEST, "Danh sách ảnh sản phẩm không được để trống", null);
+////        }
+//
+//        List<Category> categories = categoryService.handleCategoryFromProduct(request.getCategoryIds());
+//
+//        Product product = productMapper.toProduct(request);
+//        product.setActive(true);
+//        product.setCategories(categories);
+//
+//        product.setDiscountPercent(calculateProductDiscountPercent(product.getPrice(), product.getDiscount()));
+//        product.setAverageRate(0.0f);
+//        String thumbnailUrl = fileUploadService.uploadFileAndGetUrl(thumbnail, "thumbnail");
+//        product.setThumbnail(thumbnailUrl);
+//
+//        product.setSlug(StringConverter.toSlug(product.getTitle()));
+//
+//        Product savedProduct = productRepository.save(product);
+//        Long productId = savedProduct.getId();
+//
+//        String uniqueSlug = slugService.generateUniqueSlug(savedProduct.getTitle(), productId);
+//        savedProduct.setSlug(uniqueSlug);
+//
+//        productImageService.createImageByProduct(savedProduct, images);
+//
+//        savedProduct.setProductImage(null);
+//        savedProduct = productRepository.save(savedProduct);
+//
+//        ProductEvent productEvent = ProductEvent.builder()
+//                .id(savedProduct.getId())
+//                .discount(savedProduct.getDiscount())
+//                .price(savedProduct.getPrice())
+//                .quantity(savedProduct.getQuantity())
+//                .title(savedProduct.getTitle())
+//                .build();
+//        kafkaTemplate.send("product-create-topic", productEvent);
+//        ProductResponse productResponse = productMapper.toProductResponse(savedProduct);
+//        productResponse.setThumbnail(fileServiceUrl + savedProduct.getThumbnail());
+//
+//        return ApiResponse.<ProductResponse>builder()
+//                .status(HttpStatus.CREATED.value())
+//                .message("Thêm sản phẩm thành công")
+//                .result(productResponse)
+//                .timestamp(LocalDateTime.now())
+//                .build();
+//    }
 
     // Modified to handle thumbnail and image updates
     @Transactional
@@ -20977,6 +21626,7 @@ public class ProductService {
                 .price(savedProduct.getPrice())
                 .quantity(savedProduct.getQuantity())
                 .title(savedProduct.getTitle())
+                .thumbnail(savedProduct.getThumbnail())
                 .build();
         kafkaTemplate.send("product-update-topic", productEvent);
 
@@ -20991,6 +21641,64 @@ public class ProductService {
                 .timestamp(LocalDateTime.now())
                 .build();
     }
+
+
+//        @Transactional
+//        public ApiResponse<ProductResponse> updateProduct(Long id, ProductRequest request) throws IOException {
+//        Product existProduct = productRepository.findById(id)
+//                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Sản phẩm không tồn tại", null));
+//
+//        Product product = productMapper.updateProductFromRequest(request, existProduct);
+//
+//        List<Category> categories = categoryService.handleCategoryFromProduct(request.getCategoryIds());
+//
+//        if (request.getActive() != null) {
+//            existProduct.setActive(request.getActive());
+//        }
+//
+//        MultipartFile thumbnail = FileUtils.convertPathToMultipartFile(request.getThumbnail());
+//        List<MultipartFile> images = new ArrayList<>();
+//
+//        if(request.getImages() != null) {
+//            images = FileUtils.convertPathsToMultipartFiles(request.getImages());
+//        }
+//
+//        if (!thumbnail.isEmpty()) {
+//            fileServiceClientRepository.deleteFile(existProduct.getThumbnail());
+//            String newThumbnailUrl = fileUploadService.uploadFileAndGetUrl(thumbnail, "new thumbnail");
+//            existProduct.setThumbnail(newThumbnailUrl);
+//        }
+//
+//        if (!CollectionUtils.isEmpty(images)) {
+//            productImageService.deleteAllByProductId(id);
+//            productImageService.createImageByProduct(product, images);
+//        }
+//
+//        existProduct.setDiscountPercent(calculateProductDiscountPercent(product.getPrice(), product.getDiscount()));
+//        existProduct.setSlug(slugService.generateUniqueSlug(product.getTitle(), id));
+//        existProduct.setCategories(categories);
+//        Product savedProduct = productRepository.save(existProduct);
+//
+//        ProductEvent productEvent = ProductEvent.builder()
+//                .id(savedProduct.getId())
+//                .discount(savedProduct.getDiscount())
+//                .price(savedProduct.getPrice())
+//                .quantity(savedProduct.getQuantity())
+//                .title(savedProduct.getTitle())
+//                .build();
+//        kafkaTemplate.send("product-update-topic", productEvent);
+//
+//        ProductResponse response = productMapper.toProductResponse(savedProduct);
+//        response.setThumbnail(savedProduct.getThumbnail());
+//
+//
+//        return ApiResponse.<ProductResponse>builder()
+//                .status(HttpStatus.OK.value())
+//                .message("Cập nhật sản phẩm thành công")
+//                .result(response)
+//                .timestamp(LocalDateTime.now())
+//                .build();
+//    }
 
 
     @Transactional
@@ -21402,6 +22110,45 @@ public class UserEventConsumer {
     }
 }
 
+/* ===== product-service\src\main\java\com\hau\product_service\utils\FileUtils.java ===== */
+package com.hau.product_service.utils;
+
+import com.hau.product_service.custom.FilePathMultipartFile;
+import com.hau.product_service.exception.AppException;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+public class FileUtils {
+
+    public static MultipartFile convertPathToMultipartFile(String path) throws IOException {
+        File f = new File(path);
+        if(!f.isFile()) {
+            throw new AppException(HttpStatus.BAD_REQUEST, "File không hợp lệ", null);
+        }
+        return new FilePathMultipartFile(path);
+    }
+
+    public static List<MultipartFile> convertPathsToMultipartFiles(List<String> paths) throws IOException {
+        List<MultipartFile> result = new ArrayList<>();
+        for (String path : paths) {
+            File f = new File(path);
+            if(!f.isFile()) {
+                throw new AppException(HttpStatus.BAD_REQUEST, "File không hợp lệ", null);
+            }
+            result.add(convertPathToMultipartFile(path));
+        }
+        return result;
+    }
+
+}
+
+
+
 /* ===== product-service\src\main\resources\application-sample.yml ===== */
 server:
   port: 8082
@@ -21517,6 +22264,44 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ProfileCreateEvent {
+    private Long id;
+    private Integer userId;
+    private String fullName;
+    private String phone;
+    private String address;
+}
+
+
+/* ===== profile-service\src\main\java\com\hau\event\dto\ProfileDeleteEvent.java ===== */
+package com.hau.event.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProfileDeleteEvent {
+    private Long id;
+}
+
+
+/* ===== profile-service\src\main\java\com\hau\event\dto\ProfileUpdateEvent.java ===== */
+package com.hau.event.dto;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ProfileUpdateEvent {
     private Long id;
     private Integer userId;
     private String fullName;
@@ -22082,6 +22867,8 @@ public interface ProfileRepository extends JpaRepository<Profile, Long> {
 package com.hau.profile_service.service;
 
 import com.hau.event.dto.ProfileCreateEvent;
+import com.hau.event.dto.ProfileDeleteEvent;
+import com.hau.event.dto.ProfileUpdateEvent;
 import com.hau.profile_service.dto.*;
 import com.hau.profile_service.entity.Profile;
 import com.hau.profile_service.exception.AppException;
@@ -22152,7 +22939,14 @@ public class ProfileService {
         Profile profile = findProfileById(userId);
         profileMapper.updateUserProfile(profile, profileUpdateRequest);
         profileRepository.save(profile);
-
+        ProfileUpdateEvent profileUpdateEvent = ProfileUpdateEvent.builder()
+                .id(profile.getId())
+                .userId(profile.getUserId())
+                .fullName(profile.getFullName())
+                .phone(profile.getPhone())
+                .address(profile.getAddress())
+                .build();
+        kafkaTemplate.send("profile-update-event", profileUpdateEvent);
         return ApiResponse.<ProfileResponse>builder()
                 .status(HttpStatus.OK.value())
                 .message("Cập nhật thông tin thành công")
@@ -22164,6 +22958,10 @@ public class ProfileService {
     public ApiResponse<String> deleteProfile(Long profileId) {
         Profile profile = findProfileById(profileId);
         profileRepository.delete(profile);
+        ProfileDeleteEvent profileDeleteEvent = ProfileDeleteEvent.builder()
+                .id(profile.getId())
+                .build();
+        kafkaTemplate.send("profile-delete-event", profileDeleteEvent);
 
         return ApiResponse.<String>builder()
                 .status(HttpStatus.OK.value())
@@ -22316,10 +23114,8 @@ class ProfileServiceApplicationTests {
 /*   customer-service\target/ */
 /*   file-service\.mvn/ */
 /*   file-service\target/ */
-/*   identity-service\.codebase/ */
 /*   identity-service\.mvn/ */
 /*   identity-service\target/ */
-/*   notification-service\.codebase/ */
 /*   notification-service\.mvn/ */
 /*   notification-service\target/ */
 /*   order-service\.mvn/ */
@@ -22370,6 +23166,7 @@ class ProfileServiceApplicationTests {
 /*   file-service\mvnw */
 /*   file-service\mvnw.cmd */
 /*   file-service\pom.xml */
+/*   hs_err_pid3760.log */
 /*   identity-service\.gitattributes */
 /*   identity-service\.gitignore */
 /*   identity-service\mvnw */
@@ -22400,3 +23197,4 @@ class ProfileServiceApplicationTests {
 /*   profile-service\mvnw */
 /*   profile-service\mvnw.cmd */
 /*   profile-service\pom.xml */
+/*   replay_pid3760.log */

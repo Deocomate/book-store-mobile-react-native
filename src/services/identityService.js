@@ -1,10 +1,5 @@
-/*
-####################################################################
-# identityService.js (Replaces authService.js)
-####################################################################
-*/
-// src/services/identityService.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {Platform} from 'react-native';
 import api from './api';
 
 const AUTH_TOKEN_KEY = 'authToken';
@@ -36,7 +31,7 @@ const identityService = {
         try {
             const token = await AsyncStorage.getItem(AUTH_TOKEN_KEY);
             if (token) {
-                await api.post('/identity/auth/logout', { token });
+                await api.post('/identity/auth/logout', {token});
             }
         } catch (apiError) {
             console.error('API Logout failed, proceeding with local logout:', apiError.message || apiError);
@@ -50,7 +45,7 @@ const identityService = {
 
     introspectToken: async (token) => {
         try {
-            const response = await api.post('/identity/auth/introspect', { token });
+            const response = await api.post('/identity/auth/introspect', {token});
             return response; // ApiResponse<IntrospectResponse>
         } catch (error) {
             console.error('Introspect token failed:', error.message || error);
@@ -66,7 +61,7 @@ const identityService = {
             throw new Error('No refresh token available.');
         }
         try {
-            const response = await api.post('/identity/auth/refresh-token', { token: currentRefreshToken });
+            const response = await api.post('/identity/auth/refresh-token', {token: currentRefreshToken});
             if (response && response.result && response.result.token) {
                 await AsyncStorage.setItem(AUTH_TOKEN_KEY, response.result.token);
                 // if (response.result.refreshToken) { // If API provides a new refresh token
@@ -86,7 +81,7 @@ const identityService = {
     // === Password Recovery ===
     sendOtpForgotPassword: async (username) => {
         try {
-            const response = await api.post('/identity/auth/password-recovery/otp', { username });
+            const response = await api.post('/identity/auth/password-recovery/otp', {username});
             return response; // ApiResponse<string>
         } catch (error) {
             console.error('Send OTP for forgot password failed:', error.message || error);
@@ -96,7 +91,7 @@ const identityService = {
 
     verifyOtpForgotPassword: async (username, otp) => {
         try {
-            const response = await api.post('/identity/auth/password-recovery/otp/verify', { username, otp });
+            const response = await api.post('/identity/auth/password-recovery/otp/verify', {username, otp});
             return response; // ApiResponse<VerifyOtpResponse>
         } catch (error) {
             console.error('Verify OTP for forgot password failed:', error.message || error);
@@ -106,7 +101,7 @@ const identityService = {
 
     resetPasswordWithToken: async (newPassword, verificationToken) => {
         try {
-            const response = await api.post('/identity/auth/password-recovery/reset', { newPassword, verificationToken });
+            const response = await api.post('/identity/auth/password-recovery/reset', {newPassword, verificationToken});
             return response; // ApiResponse<string>
         } catch (error) {
             console.error('Reset password failed:', error.message || error);
@@ -125,26 +120,53 @@ const identityService = {
         }
     },
 
-    // === Profile Management (moved to profileService, but some user-specific identity calls remain here) ===
-    updateMyProfileImage: async (profileImageFile) => {
-        // profileImageFile: { uri, fileName, mimeType }
+    updateMyProfileImage: async (imageFilePayload) => {
+        const {fileInput, fileName, mimeType} = imageFilePayload;
         const formData = new FormData();
-        formData.append('profileImage', {
-            uri: profileImageFile.uri,
-            name: profileImageFile.fileName || `profile-${Date.now()}.${profileImageFile.uri.split('.').pop()}`,
-            type: profileImageFile.mimeType || 'image/jpeg',
-        });
+
+        console.log('🔄 Preparing FormData for profile image (identityService):');
+        console.log('  ➡️ FileName:', fileName);
+        console.log('  ➡️ MimeType:', mimeType);
+        console.log('  ➡️ Type of fileInput:', typeof fileInput);
+
+        if (Platform.OS === 'web' && fileInput instanceof Blob) {
+            console.log('  fileInput is a Blob. Size:', fileInput.size);
+            formData.append('profileImage', fileInput, fileName);
+        } else if (typeof fileInput === 'string') { // For native URI
+            console.log('  fileInput is a URI:', fileInput);
+            formData.append('profileImage', {
+                uri: fileInput, name: fileName, type: mimeType,
+            });
+        } else {
+            console.error("❌ Invalid fileInput type in identityService.updateMyProfileImage");
+            throw new Error("Loại file không hợp lệ để tải lên.");
+        }
+
         try {
-            const response = await api.put('/identity/users/profile-image', formData); // Note: API spec shows param, but controller takes RequestPart
+            // 👇 MODIFICATION HERE: Add headers config
+            const response = await api.put('/identity/users/profile-image', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data', // Explicitly set Content-Type
+                },
+            });
+            // 👆 END MODIFICATION
+
             if (response && response.result) {
-                const currentUser = await identityService.getCurrentUser();
-                if (currentUser) {
-                    await identityService.setCurrentUser({ ...currentUser, profileImage: response.result.profileImage });
-                }
+                await identityService.setCurrentUser(response.result);
             }
-            return response; // ApiResponse<UserResponse>
+            return response;
         } catch (error) {
-            console.error('Update my profile image failed:', error.message || error);
+            console.error('❌ Update my profile image failed in identityService catch block.');
+            if (error && error.status && error.message) {
+                console.error(`  Interceptor Processed Error - Status: ${error.status}, Message: ${error.message}`);
+                if (error.data) {
+                    console.error('  Error Data:', JSON.stringify(error.data, null, 2));
+                }
+            } else if (error && error.message) {
+                console.error('  Raw Error Message:', error.message);
+            } else {
+                console.error('  Unknown error structure:', JSON.stringify(error, null, 2));
+            }
             throw error;
         }
     },
@@ -163,7 +185,11 @@ const identityService = {
     getAllUsersForAdmin: async (pageIndex = 1, pageSize = 10) => {
         try {
             // Backend UserController uses 0-based pageIndex
-            const response = await api.get('/identity/users', { params: { pageIndex: pageIndex > 0 ? pageIndex - 1 : 0, pageSize } });
+            const response = await api.get('/identity/users', {
+                params: {
+                    pageIndex: pageIndex > 0 ? pageIndex - 1 : 0, pageSize
+                }
+            });
             return response; // ApiResponse<PageResponse<UserResponse>>
         } catch (error) {
             console.error('Admin: Get all users failed:', error.message || error);

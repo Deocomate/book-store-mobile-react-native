@@ -17,7 +17,7 @@ const blogService = {
             pageSize,
         };
         try {
-            const response = await api.get('/blog', { params });
+            const response = await api.get('/blog/', { params });
             // axios_response_example shows pageIndex starting from 1 for blogs
             // Ensure backend BlogServiceImpl page is 0-indexed: page = pageIndex - 1
             // Or if backend is 1-indexed for this specific endpoint, keep as is.

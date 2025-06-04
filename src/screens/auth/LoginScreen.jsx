@@ -2,17 +2,31 @@
 import { useAuth } from '@/contexts/AuthContext'; // Import useAuth
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 function LoginScreen() {
     const router = useRouter();
-    const { login } = useAuth(); // Lấy hàm login từ context
+    const { login } = useAuth();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false); // State cho loading
     const [error, setError] = useState(''); // State cho thông báo lỗi
+
+    useEffect(() => {
+        console.log("Login Screen mounted");
+    }, []);
 
     const handleLogin = async () => {
         if (!username.trim() || !password.trim()) {
@@ -76,7 +90,8 @@ function LoginScreen() {
                     {/* Username Input */}
                     <View className="mb-5">
                         <Text className="text-sm font-medium text-gray-600 mb-1 ml-1">Tên đăng nhập</Text>
-                        <View className="flex-row items-center bg-white border border-gray-300 rounded-lg p-3 focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
+                        <View
+                            className="flex-row items-center bg-white border border-gray-300 rounded-lg p-3 focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
                             <Ionicons name="person-outline" size={20} color="#6B7280" className="mr-2" />
                             <TextInput
                                 className="flex-1 text-base text-gray-800"
@@ -94,7 +109,8 @@ function LoginScreen() {
                     {/* Password Input */}
                     <View className="mb-6">
                         <Text className="text-sm font-medium text-gray-600 mb-1 ml-1">Mật khẩu</Text>
-                        <View className="flex-row items-center bg-white border border-gray-300 rounded-lg p-3 focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
+                        <View
+                            className="flex-row items-center bg-white border border-gray-300 rounded-lg p-3 focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
                             <Ionicons name="lock-closed-outline" size={20} color="#6B7280" className="mr-2" />
                             <TextInput
                                 className="flex-1 text-base text-gray-800"
@@ -106,7 +122,8 @@ function LoginScreen() {
                                 editable={!isLoading}
                             />
                             <TouchableOpacity onPress={() => setShowPassword(!showPassword)} disabled={isLoading}>
-                                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={24} color="#6B7280" />
+                                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={24}
+                                    color="#6B7280" />
                             </TouchableOpacity>
                         </View>
                     </View>

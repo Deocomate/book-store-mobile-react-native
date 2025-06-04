@@ -1,11 +1,3 @@
-
-
-/*
-####################################################################
-# orderService.js
-####################################################################
-*/
-// src/services/orderService.js
 import api from './api';
 
 const orderService = {
@@ -13,7 +5,7 @@ const orderService = {
     createOrder: async (orderData) => {
         // orderData: { profileId, paymentMethod, note, orderProducts: [{productId, quantity}] }
         try {
-            const response = await api.post('/order', orderData);
+            const response = await api.post('/order/', orderData);
             return response; // ApiResponse<OrderResponse>
         } catch (error) {
             console.error('Create order failed:', error.message || error);

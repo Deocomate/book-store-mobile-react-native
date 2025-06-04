@@ -1,57 +1,13 @@
-// src/screens/product/ProductDetailScreen.jsx
+
+import { useCart } from '@/contexts/CartContext'; // Import useCart
+import { productService } from '@/services'; // Import productService
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import { Stack, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, FlatList, Image, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
-// Lấy lại hàm generateFakeProducts và StarRating, hoặc import nếu bạn tách ra file riêng
-// --- DỮ LIỆU GIẢ ---
-const generateFakeProducts = (count = 20) => {
-    const products = [];
-    const bookTitles = [
-        "Lập Trình Với NodeJS", "React Native Cho Người Mới Bắt Đầu", "Kiến Trúc Microservices",
-        "Thiết Kế Hướng Dữ Liệu", "Giải Thuật Và Cấu Trúc Dữ Liệu", "Clean Code Handbook",
-        "Bí Quyết Trở Thành Fullstack Developer", "Học Docker Trong 24 Giờ", "Kubernetes Nâng Cao",
-        "Python Cho Khoa Học Dữ Liệu"
-    ];
-    const authors = [
-        "Nguyễn Văn Coder", "Trần Thị Dev", "Lê Minh Engineer", "Phạm Thuật Toán Gia",
-        "Hoàng Hệ Thống", "Mai Kiến Trúc Sư", "Bùi Chuyên Gia", "Đỗ Lập Trình Viên"
-    ];
-    const categories = ["Công nghệ", "Lập trình", "Phát triển Web", "Mobile App", "Dữ liệu"];
-
-    for (let i = 0; i < count; i++) {
-        const original_price = Math.floor(Math.random() * 400 + 100) * 1000; // 100k - 500k
-        const discount_percent = Math.random() < 0.6 ? Math.random() * 0.35 + 0.05 : 0; // 5-40% discount, 60% chance
-        const sale_price = Math.floor(original_price * (1 - discount_percent) / 1000) * 1000;
-        products.push({
-            id: products.length, // Đảm bảo ID là duy nhất khi generate
-            title: bookTitles[i % bookTitles.length] + (count > bookTitles.length ? ` Vol. ${Math.floor(i / bookTitles.length) + 1}` : ''),
-            author: authors[i % authors.length],
-            thumbnail_url: `https://picsum.photos/seed/prodthumb${i + 1}/270/400`,
-            sale_price: sale_price,
-            original_price: original_price,
-            average_rating: parseFloat((Math.random() * 1.8 + 3.2).toFixed(1)), // Rating 3.2 - 5.0
-            quantity_in_stock: Math.floor(Math.random() * 50) + 5,
-            category: categories[i % categories.length],
-            description: "Một cuốn sách tuyệt vời dành cho những ai đam mê khám phá và học hỏi. Với nội dung sâu sắc, trình bày rõ ràng và nhiều ví dụ minh họa thực tế, cuốn sách này sẽ là người bạn đồng hành không thể thiếu trên con đường chinh phục tri thức của bạn. Cuốn sách đi sâu vào các khái niệm cốt lõi, cung cấp các kỹ thuật tiên tiến và chia sẻ những kinh nghiệm quý báu từ các chuyên gia hàng đầu trong ngành. Hãy sẵn sàng để mở rộng tầm nhìn và nâng cao kỹ năng của bạn lên một tầm cao mới!",
-            images: [
-                `https://picsum.photos/seed/prodimg${i + 1}_1/600/800`,
-                `https://picsum.photos/seed/prodimg${i + 1}_2/600/800`,
-                `https://picsum.photos/seed/prodimg${i + 1}_3/600/800`,
-            ],
-            publisher: "NXB Tri Thức Việt",
-            publication_year: 2023 + Math.floor(i / 5) % 3,
-            page_count: Math.floor(Math.random() * 300) + 150,
-            form_description: Math.random() > 0.5 ? "Bìa mềm" : "Bìa cứng",
-            package_size_info: `${Math.floor(Math.random() * 5) + 15} x ${Math.floor(Math.random() * 5) + 20} x ${Math.floor(Math.random() * 3) + 1} cm`
-        });
-    }
-    return products;
-};
-const ALL_PRODUCTS_DETAIL_CONTEXT = generateFakeProducts(30);
-
-const StarRating = ({ rating, size = 16, color = "#FFC107", showText = true }) => {
+// --- Các component UI phụ trợ (không thay đổi) ---
+const StarRating = ({ rating, size = 16, color = "#FFC107", reviewCount = 0, showText = true }) => {
     const fullStars = Math.floor(rating);
     const halfStar = rating % 1 >= 0.4;
     const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
@@ -60,61 +16,172 @@ const StarRating = ({ rating, size = 16, color = "#FFC107", showText = true }) =
             {[...Array(fullStars)].map((_, i) => <FontAwesome key={`full_${i}`} name="star" size={size} color={color} />)}
             {halfStar && <FontAwesome name="star-half-empty" size={size} color={color} />}
             {[...Array(emptyStars)].map((_, i) => <FontAwesome key={`empty_${i}`} name="star-o" size={size} color={color} />)}
-            {showText && <Text className="text-sm text-gray-600 ml-2">{rating.toFixed(1)} ({Math.floor(Math.random() * 100) + 5} đánh giá)</Text>}
+            {showText && <Text className="text-sm text-gray-600 ml-2">{rating ? rating.toFixed(1) : 'Mới'} {reviewCount > 0 ? `(${reviewCount} đánh giá)` : '(chưa có đánh giá)'}</Text>}
+        </View>
+    );
+};
+
+const InfoRow = ({ label, value }) => (
+    <View className="flex-row py-1.5">
+        <Text className="w-2/5 text-sm text-gray-500">{label}:</Text>
+        <Text className="flex-1 text-sm text-gray-800 font-medium">{value || 'N/A'}</Text>
+    </View>
+);
+
+const ReviewItem = ({ review }) => {
+    const reviewDate = review.createdAt ? new Date(review.createdAt).toLocaleDateString('vi-VN') : 'N/A';
+    return (
+        <View className="py-3 border-b border-gray-200">
+            <View className="flex-row justify-between items-center mb-1">
+                <Text className="font-semibold text-gray-700">Người dùng ID: {review.userId}</Text> 
+                <StarRating rating={review.vote} size={14} showText={false} />
+            </View>
+            <Text className="text-xs text-gray-500 mb-1.5">{reviewDate}</Text>
+            <Text className="text-gray-700 leading-relaxed">{review.comment}</Text>
         </View>
     );
 };
 
 const { width: screenWidth } = Dimensions.get('window');
 
-function ProductDetailScreen({ id }) {
-    console.log(ALL_PRODUCTS_DETAIL_CONTEXT, id);
-
+// --- Component chính ProductDetailScreen ---
+function ProductDetailScreen({ id: productId }) {
     const router = useRouter();
-    const params = useLocalSearchParams();
+    const { addProductToCart, isLoading: isAddingToCart } = useCart(); // Lấy hàm và trạng thái từ CartContext
 
     const [product, setProduct] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [quantity, setQuantity] = useState(1);
+    const [reviews, setReviews] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+    const [quantity, setQuantity] = useState(1); // Thêm state cho số lượng sản phẩm
+
+    const [categoryNames, setCategoryNames] = useState({});
+
+    const fetchProductDetails = useCallback(async () => {
+        if (!productId) {
+            setError("Không có ID sản phẩm.");
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+            // 1. Fetch product details
+            const productResponse = await productService.getProductById(productId);
+            if (productResponse && productResponse.status === 200 && productResponse.result) {
+                setProduct(productResponse.result);
+                setQuantity(1); // Reset quantity to 1 when a new product is loaded
+
+                // 2. Fetch category names (if product has categories)
+                if (productResponse.result.categories && productResponse.result.categories.length > 0) {
+                    const catNameMap = {};
+                    try {
+                        const allCategoriesResponse = await productService.getProductCategories();
+                        if (allCategoriesResponse && allCategoriesResponse.status === 200 && allCategoriesResponse.result) {
+                            allCategoriesResponse.result.forEach(cat => {
+                                catNameMap[cat.id] = cat.name;
+                            });
+                            setCategoryNames(catNameMap);
+                        }
+                    } catch (catErr) {
+                        console.warn("Could not fetch category names:", catErr.message);
+                    }
+                }
+
+                // 3. Fetch product reviews (first few reviews)
+                const reviewsResponse = await productService.getRatesByProductId(productId, 1, 5); // Fetch first 5 reviews
+                if (reviewsResponse && reviewsResponse.status === 200 && reviewsResponse.result && reviewsResponse.result.data) {
+                    setReviews(reviewsResponse.result.data);
+                }
+
+            } else {
+                throw new Error(productResponse?.message || "Không tìm thấy sản phẩm.");
+            }
+        } catch (err) {
+            console.error("Error fetching product details:", err);
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }, [productId]);
 
     useEffect(() => {
-        // Giả lập fetch product data
-        setIsLoading(true);
-        const foundProduct = ALL_PRODUCTS_DETAIL_CONTEXT.find(p => p.id == id);
-        setTimeout(() => { // Giả lập độ trễ mạng
-            setProduct(foundProduct);
-            setIsLoading(false);
-        }, 500);
-    }, [id]);
+        fetchProductDetails();
+    }, [fetchProductDetails]);
 
+    // Tính toán phần trăm giảm giá
     const discountPercent = useMemo(() => {
-        if (!product || product.original_price <= product.sale_price) return 0;
-        return Math.round(((product.original_price - product.sale_price) / product.original_price) * 100);
+        if (!product || !product.price || !product.discount || product.price <= product.discount) return 0;
+        // product.discountPercent đã được backend tính sẵn, sử dụng nó nếu có
+        return product.discountPercent || Math.round(((product.price - product.discount) / product.price) * 100);
     }, [product]);
 
-    const handleAddToCart = () => {
+    // Hàm tăng số lượng
+    const increaseQuantity = useCallback(() => {
+        if (product && quantity < product.quantity) { // Giới hạn số lượng bằng số lượng tồn kho
+            setQuantity(prev => prev + 1);
+        }
+    }, [quantity, product]);
+
+    // Hàm giảm số lượng
+    const decreaseQuantity = useCallback(() => {
+        if (quantity > 1) { // Đảm bảo số lượng không nhỏ hơn 1
+            setQuantity(prev => prev - 1);
+        }
+    }, [quantity]);
+
+    // Hàm thêm vào giỏ hàng
+    const handleAddToCart = async () => {
         if (!product) return;
-        // Logic thêm vào giỏ hàng (chưa kết nối API)
-        Alert.alert("Thêm vào giỏ hàng", `${quantity} x ${product.title} đã được thêm vào giỏ hàng (giả lập).`);
+        if (product.quantity === 0) {
+            Alert.alert("Hết hàng", "Sản phẩm này tạm thời hết hàng.");
+            return;
+        }
+        if (quantity > product.quantity) {
+            Alert.alert("Không đủ hàng", `Chỉ còn ${product.quantity} sản phẩm trong kho. Vui lòng giảm số lượng.`);
+            return;
+        }
+
+        const success = await addProductToCart(product.id, quantity); // Gọi hàm từ CartContext
+        if (success) {
+            Alert.alert("Thành công", `Đã thêm ${quantity} sản phẩm "${product.title}" vào giỏ hàng!`);
+            // Optionally, refresh product details if quantity in stock needs to be updated immediately
+            // Or rely on CartContext to handle fetching and UI update for cart icon.
+            setQuantity(1); // Reset số lượng về 1 sau khi thêm vào giỏ
+        } else {
+            Alert.alert("Lỗi", "Không thể thêm sản phẩm vào giỏ hàng. Vui lòng thử lại.");
+        }
     };
 
+    // Hàm render item cho carousel ảnh
     const renderImageCarousel = ({ item }) => (
         <Image
-            source={{ uri: item }}
-            className="w-[${screenWidth}] h-[400px]" // Sử dụng width của màn hình
-            resizeMode="contain"
+            source={{ uri: item }} // API trả về URL đầy đủ
+            style={{ width: screenWidth, height: 400 }} // Đảm bảo width bằng chiều rộng màn hình
+            resizeMode="contain" // Chế độ hiển thị ảnh
+            placeholder={{ uri: 'https://via.placeholder.com/600x800/e0e0e0/999999?text=Book+Image' }}
+            transition={300}
         />
     );
 
+    // Xử lý sự kiện scroll để cập nhật chỉ mục ảnh đang hiển thị
     const onScrollImage = (event) => {
         const slideSize = event.nativeEvent.layoutMeasurement.width;
         const index = event.nativeEvent.contentOffset.x / slideSize;
         setActiveImageIndex(Math.round(index));
     };
 
+    // Điều hướng đến màn hình xem tất cả đánh giá
+    const handleViewAllReviews = () => {
+        router.push({
+            pathname: '/(app)/product/reviews',
+            params: { productId: product.id }
+        });
+    };
 
-    if (isLoading) {
+    // --- Render Loading, Error, hoặc Nội dung chính ---
+    if (loading) {
         return (
             <SafeAreaView className="flex-1 justify-center items-center bg-white">
                 <ActivityIndicator size="large" color="#0EA5E9" />
@@ -122,39 +189,49 @@ function ProductDetailScreen({ id }) {
         );
     }
 
-    if (!product) {
+    if (error || !product) {
         return (
             <SafeAreaView className="flex-1 justify-center items-center bg-slate-100 p-5">
+                <Stack.Screen options={{ title: 'Lỗi' }} />
                 <Ionicons name="alert-circle-outline" size={70} color="#F87171" />
-                <Text className="text-xl font-semibold text-gray-700 mt-4">Không tìm thấy sản phẩm</Text>
-                <Text className="text-gray-500 mt-1 text-center">
-                    Sản phẩm bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.
+                <Text className="text-xl font-semibold text-gray-700 mt-4">
+                    {error ? "Lỗi tải sản phẩm" : "Không tìm thấy sản phẩm"}
                 </Text>
-                <TouchableOpacity onPress={() => router.back()} className="mt-6 bg-sky-500 px-5 py-2.5 rounded-lg">
+                <Text className="text-gray-500 mt-1 text-center mb-3">
+                    {error || "Sản phẩm bạn đang tìm kiếm không tồn tại hoặc đã bị xóa."}
+                </Text>
+                <TouchableOpacity
+                    onPress={() => router.canGoBack() ? router.back() : router.replace('/(app)/product/')}
+                    className="mt-6 bg-sky-500 px-5 py-2.5 rounded-lg shadow active:bg-sky-600"
+                >
                     <Text className="text-white font-medium">Quay lại</Text>
                 </TouchableOpacity>
             </SafeAreaView>
         );
     }
 
+    // `product.discount` là giá bán (sale_price từ DB)
+    // `product.price` là giá gốc (original_price từ DB)
+    const productImages = product.imageUrls && product.imageUrls.length > 0 ? product.imageUrls : [product.thumbnail];
+    const isOutOfStock = product.quantity === 0;
+
     return (
         <SafeAreaView className="flex-1 bg-white">
             <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Image Carousel */}
                 <View className="h-[400px] bg-slate-100">
                     <FlatList
-                        data={product.images}
+                        data={productImages}
                         renderItem={renderImageCarousel}
                         keyExtractor={(item, index) => `img_${index}`}
                         horizontal
                         pagingEnabled
                         showsHorizontalScrollIndicator={false}
                         onScroll={onScrollImage}
-                        scrollEventThrottle={16} // Quan trọng cho onScroll
+                        scrollEventThrottle={16}
                     />
-                    {product.images.length > 1 && (
+                    {productImages.length > 1 && (
                         <View className="absolute bottom-3 left-0 right-0 flex-row justify-center items-center space-x-2">
-                            {product.images.map((_, index) => (
+                            {productImages.map((_, index) => (
                                 <View
                                     key={`dot_${index}`}
                                     className={`h-2 w-2 rounded-full ${index === activeImageIndex ? 'bg-sky-500' : 'bg-gray-400'}`}
@@ -164,59 +241,54 @@ function ProductDetailScreen({ id }) {
                     )}
                 </View>
 
-                {/* Product Info */}
                 <View className="p-4">
                     <Text className="text-2xl font-bold text-gray-800 leading-tight">{product.title}</Text>
                     <Text className="text-base text-gray-600 mt-1">Tác giả: {product.author}</Text>
 
-                    {/* Price & Discount */}
                     <View className="mt-3 flex-row items-end space-x-3">
                         <Text className="text-3xl font-bold text-sky-600">
-                            {product.sale_price.toLocaleString('vi-VN')}₫
+                            {product.discount?.toLocaleString('vi-VN')}₫
                         </Text>
                         {discountPercent > 0 && (
                             <Text className="text-base text-gray-400 line-through">
-                                {product.original_price.toLocaleString('vi-VN')}₫
+                                {product.price?.toLocaleString('vi-VN')}₫
                             </Text>
                         )}
                         {discountPercent > 0 && (
                             <View className="bg-red-100 px-2 py-0.5 rounded-md border border-red-300">
-                                <Text className="text-red-600 text-xs font-semibold">GIẢM {discountPercent}%</Text>
+                                <Text className="text-red-600 text-xs font-semibold">GIẢM {Math.round(discountPercent)}%</Text>
                             </View>
                         )}
                     </View>
 
-                    {/* Rating */}
                     <View className="mt-3">
-                        <StarRating rating={product.average_rating} />
+                        <StarRating rating={product.averageRate} reviewCount={reviews.length} />
                     </View>
 
-                    {/* Stock Status */}
-                    <Text className={`mt-3 text-sm font-medium ${product.quantity_in_stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {product.quantity_in_stock > 0 ? `Còn hàng (${product.quantity_in_stock} sản phẩm)` : "Tạm hết hàng"}
+                    <Text className={`mt-3 text-sm font-medium ${isOutOfStock ? 'text-red-600' : 'text-green-600'}`}>
+                        {isOutOfStock ? "Tạm hết hàng" : `Còn hàng (${product.quantity} sản phẩm)`}
                     </Text>
                 </View>
 
-                {/* Divider */}
                 <View className="h-2 bg-slate-100 my-3" />
 
-                {/* Product Details Section */}
                 <View className="p-4">
                     <Text className="text-lg font-semibold text-gray-800 mb-2">Thông tin chi tiết</Text>
                     <View className="space-y-1.5">
                         <InfoRow label="Nhà xuất bản" value={product.publisher} />
-                        <InfoRow label="Năm xuất bản" value={product.publication_year.toString()} />
-                        <InfoRow label="Số trang" value={product.page_count.toString()} />
-                        <InfoRow label="Hình thức bìa" value={product.form_description} />
-                        <InfoRow label="Kích thước" value={product.package_size_info} />
-                        <InfoRow label="Danh mục" value={product.category} />
+                        <InfoRow label="Năm xuất bản" value={product.publicationYear?.toString()} />
+                        <InfoRow label="Số trang" value={product.pageSize?.toString()} />
+                        <InfoRow label="Hình thức bìa" value={product.form} />
+                        <InfoRow label="Kích thước" value={product.packageSize?.toString() + ' cm'} />
+                        <InfoRow
+                            label="Danh mục"
+                            value={product.categories?.map(catId => categoryNames[catId] || `ID ${catId}`).join(', ') || 'N/A'}
+                        />
                     </View>
                 </View>
 
-                {/* Divider */}
                 <View className="h-2 bg-slate-100 my-3" />
 
-                {/* Description */}
                 <View className="p-4">
                     <Text className="text-lg font-semibold text-gray-800 mb-2">Mô tả sản phẩm</Text>
                     <Text className="text-base text-gray-700 leading-relaxed text-justify">
@@ -224,48 +296,62 @@ function ProductDetailScreen({ id }) {
                     </Text>
                 </View>
 
-                {/* TODO: Customer Reviews Section */}
-                {/* TODO: Related Products Section */}
+                <View className="h-2 bg-slate-100 my-3" />
+                <View className="p-4">
+                    <View className="flex-row justify-between items-center mb-2">
+                        <Text className="text-lg font-semibold text-gray-800">Đánh giá sản phẩm ({reviews.length})</Text>
+                        {reviews.length > 0 && (
+                            <TouchableOpacity onPress={handleViewAllReviews}> 
+                                <Text className="text-sm text-sky-600 font-medium">Xem tất cả</Text>
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                    {reviews.length > 0 ? (
+                        reviews.map(review => <ReviewItem key={review.id.toString()} review={review} />)
+                    ) : (
+                        <Text className="text-gray-500">Chưa có đánh giá nào cho sản phẩm này.</Text>
+                    )}
+                </View>
 
             </ScrollView>
 
-            {/* Bottom Action Bar */}
-            <View className="border-t border-gray-200 p-3 bg-white flex-row items-center space-x-3">
-                {/* Quantity Selector - Tạm thời ẩn, có thể thêm sau này khi tích hợp giỏ hàng */}
-                {/* <View className="flex-row items-center border border-gray-300 rounded-md">
-                    <TouchableOpacity onPress={() => setQuantity(q => Math.max(1, q - 1))} className="p-2.5">
-                        <Ionicons name="remove" size={20} color="#374151" />
+            <View className="border-t border-gray-200 p-3 bg-white flex-row items-center space-x-2">
+                <View className="flex-row items-center border border-gray-300 rounded-lg overflow-hidden">
+                    <TouchableOpacity
+                        onPress={decreaseQuantity}
+                        disabled={quantity <= 1 || isOutOfStock || isAddingToCart}
+                        className={`p-3 ${quantity <= 1 || isOutOfStock || isAddingToCart ? 'bg-gray-100' : 'active:bg-gray-200'}`}
+                    >
+                        <Ionicons name="remove" size={20} color={quantity <= 1 || isOutOfStock ? "#9CA3AF" : "#4B5563"} />
                     </TouchableOpacity>
-                    <Text className="px-3 text-base font-medium text-gray-700">{quantity}</Text>
-                    <TouchableOpacity onPress={() => setQuantity(q => Math.min(product.quantity_in_stock || 1, q + 1))} className="p-2.5">
-                        <Ionicons name="add" size={20} color="#374151" />
+                    <Text className="px-4 py-3 text-base font-semibold text-gray-800">
+                        {quantity}
+                    </Text>
+                    <TouchableOpacity
+                        onPress={increaseQuantity}
+                        disabled={isOutOfStock || quantity >= product.quantity || isAddingToCart}
+                        className={`p-3 ${isOutOfStock || quantity >= product.quantity || isAddingToCart ? 'bg-gray-100' : 'active:bg-gray-200'}`}
+                    >
+                        <Ionicons name="add" size={20} color={isOutOfStock || quantity >= product.quantity ? "#9CA3AF" : "#4B5563"} />
                     </TouchableOpacity>
-                </View> */}
-                <TouchableOpacity
-                    onPress={() => Alert.alert("Tính năng đang phát triển", "Chat với người bán sẽ sớm được cập nhật.")}
-                    className="p-3 border border-sky-500 rounded-lg"
-                >
-                    <Ionicons name="chatbubbles-outline" size={24} color="#0EA5E9" />
-                </TouchableOpacity>
+                </View>
+
                 <TouchableOpacity
                     onPress={handleAddToCart}
-                    disabled={product.quantity_in_stock === 0}
-                    className={`flex-1 py-3.5 rounded-lg shadow ${product.quantity_in_stock > 0 ? 'bg-sky-500 active:bg-sky-600' : 'bg-gray-400'}`}
+                    disabled={isOutOfStock || isAddingToCart}
+                    className={`flex-1 py-3.5 rounded-lg shadow ${isOutOfStock || isAddingToCart ? 'bg-gray-400' : 'bg-sky-500 active:bg-sky-600'}`}
                 >
-                    <Text className="text-white text-center text-base font-semibold">
-                        {product.quantity_in_stock > 0 ? "Thêm vào giỏ hàng" : "Hết hàng"}
-                    </Text>
+                    {isAddingToCart ? (
+                        <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                        <Text className="text-white text-center text-base font-semibold">
+                            {isOutOfStock ? "Hết hàng" : "Thêm vào giỏ"}
+                        </Text>
+                    )}
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
     );
 }
-
-const InfoRow = ({ label, value }) => (
-    <View className="flex-row">
-        <Text className="w-1/3 text-sm text-gray-500">{label}:</Text>
-        <Text className="flex-1 text-sm text-gray-800 font-medium">{value}</Text>
-    </View>
-);
 
 export default ProductDetailScreen;

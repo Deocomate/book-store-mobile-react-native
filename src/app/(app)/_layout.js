@@ -17,6 +17,7 @@ export default function AppTabsLayoutRoute() {
                 headerShown: false,
                 headerRight: () => <HeaderRightIcon />,
                 title: 'Trang chủ',
+                href: "/(app)/(home)",
                 tabBarIcon: ({ color, size }) => <FontAwesome name="home" size={size} color={color} />,
             }}
         />
@@ -25,6 +26,7 @@ export default function AppTabsLayoutRoute() {
             options={{
                 headerShown: false,
                 title: 'Tin tức',
+                href: "/(app)/blog",
                 tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="post-outline" size={size}
                     color={color} />,
             }}
@@ -34,6 +36,7 @@ export default function AppTabsLayoutRoute() {
             options={{
                 headerShown: false,
                 title: 'Sản phẩm',
+                href: "/(app)/product",
                 tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} />,
             }}
         />
@@ -42,6 +45,7 @@ export default function AppTabsLayoutRoute() {
             name="cart"
             options={{
                 headerShown: false,
+                href: "/(app)/cart",
                 title: ' Giỏ hàng',
                 tabBarIcon: ({ color, size }) => <Ionicons name="cart" size={size} color={color} />,
             }}
@@ -50,6 +54,7 @@ export default function AppTabsLayoutRoute() {
             name="account"
             options={{
                 title: 'Tài khoản',
+                href: "/(app)/account",
                 headerShown: false,
                 tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="account-circle" size={size}
                     color={color} />,

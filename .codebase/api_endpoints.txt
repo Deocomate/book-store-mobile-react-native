@@ -457,6 +457,27 @@ components:
         userId:
           type: "integer"
           format: "int32"
+    CartProduct:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int32"
+        cartId:
+          type: "integer"
+          format: "int32"
+        productId:
+          type: "integer"
+          format: "int32"
+        quantity:
+          type: "integer"
+          format: "int32"
+        createdAt:
+          type: "string"
+          format: "date-time"
+        updatedAt:
+          type: "string"
+          format: "date-time"
     CartResponse:
       type: "object"
       properties:
@@ -466,6 +487,10 @@ components:
         userId:
           type: "integer"
           format: "int32"
+        cartProducts:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/CartProduct"
     CartProductRequest:
       type: "object"
       properties:
