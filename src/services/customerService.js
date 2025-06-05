@@ -1,5 +1,3 @@
-
-
 /*
 ####################################################################
 # customerService.js
@@ -18,7 +16,7 @@ const customerService = {
         };
         if (sortDir) params.sortDir = sortDir;
         try {
-            const response = await api.get('/customer', { params });
+            const response = await api.get('/customer', {params});
             // Assuming example is correct and this endpoint uses 1-based for request.
             return response; // ApiResponse<PageResponse<CustomerCareResponse>>
         } catch (error) {
@@ -41,7 +39,7 @@ const customerService = {
     // POST /customer
     createContact: async (contactData) => { // { name, phone, email, address, content }
         try {
-            const response = await api.post('/customer', contactData);
+            const response = await api.post('/customer/', contactData);
             return response; // ApiResponse<CustomerCareResponse>
         } catch (error) {
             console.error('Create customer contact failed:', error.message || error);

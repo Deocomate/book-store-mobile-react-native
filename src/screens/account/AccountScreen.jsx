@@ -1,20 +1,28 @@
-// src/screens/account/AccountScreen.jsx
 import {useAuth} from '@/contexts/AuthContext';
+import {customerService} from '@/services';
 import {Feather, Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import {useRouter} from 'expo-router';
 import React, {useEffect, useState} from 'react';
 import {
-    ActivityIndicator, Alert, Image, Platform, SafeAreaView, ScrollView, Text, TouchableOpacity, View
+    ActivityIndicator,
+    Alert,
+    Image,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from 'react-native';
-
 import {dataURIToBlob} from '@/utils/imageUtils';
 
-// Default placeholder image if user.profileImage is null or
 const DEFAULT_AVATAR_URL = 'https://placehold.co/200x200/E2E8F0/A0AEC0?text=User';
-// Nên lấy từ file .env hoặc một config chung
 const FILE_DOWNLOAD_PREFIX = 'http://172.20.64.1:8888/api/v1/file/media/download/';
-
 
 const OptionItem = ({
                         iconName,
@@ -40,14 +48,135 @@ const OptionItem = ({
     </TouchableOpacity>);
 };
 
+const InfoModal = ({visible, title, content, onClose}) => (<Modal
+    animationType="slide"
+    transparent={true}
+    visible={visible}
+    onRequestClose={onClose}
+>
+    <View style={styles.modalOverlay}>
+        <View className="bg-white w-11/12 max-w-md p-6 rounded-xl shadow-xl">
+            <View className="flex-row justify-between items-center mb-4">
+                <Text className="text-xl font-bold text-sky-700">{title}</Text>
+                <TouchableOpacity onPress={onClose} className="p-1">
+                    <Ionicons name="close-circle" size={28} color="#6B7280"/>
+                </TouchableOpacity>
+            </View>
+            <ScrollView style={{maxHeight: 300}}>
+                <Text className="text-gray-700 text-base leading-relaxed">{content}</Text>
+            </ScrollView>
+            <TouchableOpacity
+                onPress={onClose}
+                className="mt-6 bg-sky-500 py-3 rounded-lg shadow active:bg-sky-600"
+            >
+                <Text className="text-white text-center font-semibold text-base">Đã hiểu</Text>
+            </TouchableOpacity>
+        </View>
+    </View>
+</Modal>);
+
+const CustomerCareModal = ({visible, onClose, onSubmit, isLoading}) => {
+    const [name, setName] = useState('');
+    const [phone, setPhone] = useState('');
+    const [email, setEmail] = useState('');
+    const [address, setAddress] = useState('');
+    const [content, setContent] = useState('');
+    const [formError, setFormError] = useState('');
+
+    const handleSubmit = () => {
+        setFormError('');
+        if (!name.trim() || !phone.trim() || !email.trim() || !content.trim()) {
+            setFormError("Vui lòng điền đầy đủ các trường bắt buộc: Họ tên, SĐT, Email và Nội dung.");
+            return;
+        }
+        // Basic email validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            setFormError("Địa chỉ email không hợp lệ.");
+            return;
+        }
+        // Basic phone validation (example: 10 digits)
+        const phoneRegex = /^\d{10}$/;
+        if (!phoneRegex.test(phone)) {
+            setFormError("Số điện thoại không hợp lệ (yêu cầu 10 chữ số).");
+            return;
+        }
+
+        onSubmit({name, phone, email, address: address.trim(), content});
+    };
+
+    return (<Modal
+        animationType="slide"
+        transparent={true}
+        visible={visible}
+        onRequestClose={onClose}
+    >
+        <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={styles.modalOverlay}
+        >
+            <View className="bg-white w-11/12 max-w-lg p-5 rounded-xl shadow-xl">
+                <View className="flex-row justify-between items-center mb-4">
+                    <Text className="text-xl font-bold text-sky-700">Gửi Yêu Cầu Hỗ Trợ</Text>
+                    <TouchableOpacity onPress={onClose} className="p-1" disabled={isLoading}>
+                        <Ionicons name="close-circle" size={28} color="#6B7280"/>
+                    </TouchableOpacity>
+                </View>
+                <ScrollView style={{maxHeight: Platform.OS === 'ios' ? 400 : 350}}
+                            keyboardShouldPersistTaps="handled">
+                    {formError ? (<View className="bg-red-100 p-3 rounded-md mb-3">
+                        <Text className="text-red-700 text-sm">{formError}</Text>
+                    </View>) : null}
+                    <View className="space-y-3">
+                        <TextInput value={name} onChangeText={setName} placeholder="Họ và tên (*)"
+                                   className="border border-gray-300 p-3 rounded-lg text-base bg-white"
+                                   editable={!isLoading}/>
+                        <TextInput value={phone} onChangeText={setPhone} placeholder="Số điện thoại (*)"
+                                   keyboardType="phone-pad"
+                                   className="border border-gray-300 p-3 rounded-lg text-base bg-white"
+                                   editable={!isLoading}/>
+                        <TextInput value={email} onChangeText={setEmail} placeholder="Email (*)"
+                                   keyboardType="email-address" autoCapitalize="none"
+                                   className="border border-gray-300 p-3 rounded-lg text-base bg-white"
+                                   editable={!isLoading}/>
+                        <TextInput value={address} onChangeText={setAddress} placeholder="Địa chỉ (Không bắt buộc)"
+                                   className="border border-gray-300 p-3 rounded-lg text-base bg-white"
+                                   editable={!isLoading}/>
+                        <TextInput value={content} onChangeText={setContent} placeholder="Nội dung yêu cầu (*)"
+                                   multiline numberOfLines={4}
+                                   className="border border-gray-300 p-3 rounded-lg text-base h-28 bg-white"
+                                   textAlignVertical="top" editable={!isLoading}/>
+                    </View>
+                </ScrollView>
+                <TouchableOpacity
+                    onPress={handleSubmit}
+                    disabled={isLoading}
+                    className={`mt-5 py-3 rounded-lg shadow ${isLoading ? 'bg-sky-300' : 'bg-sky-500 active:bg-sky-600'}`}
+                >
+                    {isLoading ? <ActivityIndicator color="white"/> :
+                        <Text className="text-white text-center font-semibold text-base">Gửi Yêu Cầu</Text>}
+                </TouchableOpacity>
+            </View>
+        </KeyboardAvoidingView>
+    </Modal>);
+};
+
+
 function AccountScreen() {
     const router = useRouter();
     const {user, logout, updateMyProfileImage, isLoading: authIsLoading} = useAuth();
     const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
     const [localUser, setLocalUser] = useState(user);
 
+    const [customerCareModalVisible, setCustomerCareModalVisible] = useState(false);
+    const [isSubmittingContact, setIsSubmittingContact] = useState(false);
+
+    const [infoModalVisible, setInfoModalVisible] = useState(false);
+    const [infoModalContent, setInfoModalContent] = useState({title: '', content: ''});
+
+
     useEffect(() => {
-        setLocalUser(user); // Sync localUser when user from context changes
+        setLocalUser(user);
     }, [user]);
 
     const requestMediaLibraryPermissions = async () => {
@@ -58,58 +187,47 @@ function AccountScreen() {
                 return false;
             }
         }
-        return true; // Cho web, ImagePicker không yêu cầu quyền này một cách tường minh qua API này.
+        return true;
     };
 
     const handlePickImage = async () => {
         const hasPermission = await requestMediaLibraryPermissions();
-        if (!hasPermission && Platform.OS !== 'web') { // Chỉ kiểm tra quyền cho non-web platforms
+        if (!hasPermission && Platform.OS !== 'web') {
             return;
         }
 
         try {
             let result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.5, // Chất lượng ảnh (0-1)
+                mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.5,
             });
 
             if (!result.canceled && result.assets && result.assets.length > 0) {
                 const pickedImage = result.assets[0];
-                console.log('📸 ImagePicker Result (pickedImage):', JSON.stringify(pickedImage, null, 2));
-
-                let fileInput; // Sẽ là Blob cho web (từ dataURI), hoặc string URI cho native
+                let fileInput;
                 let finalFileName = pickedImage.fileName;
                 let finalMimeType = pickedImage.mimeType;
 
-                // Tạo tên file nếu không có
                 if (!finalFileName) {
                     const uriParts = pickedImage.uri.split('.');
                     const extension = uriParts.length > 1 ? uriParts[uriParts.length - 1].split('?')[0].split('#')[0] : 'jpg';
                     finalFileName = `profile-${Date.now()}.${extension}`;
                 }
 
-                // Xử lý Data URI cho web
                 if (Platform.OS === 'web' && pickedImage.uri.startsWith('data:')) {
-                    console.log("URI is a data URI (web platform), attempting to convert to Blob...");
                     const blob = dataURIToBlob(pickedImage.uri);
                     if (blob) {
                         fileInput = blob;
-                        finalMimeType = blob.type; // Sử dụng mimeType từ Blob
-                        console.log("✅ Converted to Blob. Size:", blob.size, "Type:", finalMimeType);
+                        finalMimeType = blob.type;
                     } else {
                         Alert.alert("Lỗi xử lý ảnh", "Không thể chuyển đổi ảnh để tải lên.");
-                        setIsUpdatingProfileImage(false); // Đảm bảo reset state
                         return;
                     }
                 } else {
-                    // Đối với native (iOS/Android), pickedImage.uri là một file URI
                     fileInput = pickedImage.uri;
-                    // Cố gắng suy đoán mimeType nếu thiếu (cho native hoặc trường hợp web khác)
                     if (!finalMimeType) {
                         const uriParts = pickedImage.uri.split('.');
                         const extension = uriParts.length > 1 ? uriParts[uriParts.length - 1].toLowerCase().split('?')[0].split('#')[0] : '';
-                        if (extension === 'jpg' || extension === 'jpeg') finalMimeType = 'image/jpeg'; else if (extension === 'png') finalMimeType = 'image/png'; else if (extension) finalMimeType = `image/${extension}`; // Có thể không chuẩn
-                        else finalMimeType = 'application/octet-stream'; // Mặc định
-                        console.log("ℹ️ Deduced MimeType:", finalMimeType, "from URI:", pickedImage.uri);
+                        if (extension === 'jpg' || extension === 'jpeg') finalMimeType = 'image/jpeg'; else if (extension === 'png') finalMimeType = 'image/png'; else if (extension) finalMimeType = `image/${extension}`; else finalMimeType = 'application/octet-stream';
                     }
                 }
 
@@ -127,21 +245,49 @@ function AccountScreen() {
                 }
             }
         } catch (error) {
-            console.error("Error in AccountScreen handlePickImage:", JSON.stringify(error, null, 2));
             Alert.alert("Lỗi nghiêm trọng", error?.message || "Đã có lỗi xảy ra khi chọn hoặc tải ảnh lên.");
         } finally {
             setIsUpdatingProfileImage(false);
         }
     };
 
+    const handleSubmitCustomerCare = async (contactData) => {
+        setIsSubmittingContact(true);
+        try {
+            const response = await customerService.createContact(contactData);
+            console.log(response)
+            if (response && response.status === 201) { // Assuming 201 for successful creation
+                Alert.alert("Thành công", "Yêu cầu hỗ trợ của bạn đã được gửi đi.");
+                setCustomerCareModalVisible(false);
+            } else {
+                Alert.alert("Lỗi", response?.message || "Không thể gửi yêu cầu. Vui lòng thử lại.");
+            }
+        } catch (error) {
+            Alert.alert("Lỗi", error?.message || "Đã xảy ra lỗi khi gửi yêu cầu hỗ trợ.");
+        } finally {
+            setIsSubmittingContact(false);
+        }
+    };
+
+
+    const handleOpenInfoModal = (title, content) => {
+        setInfoModalContent({title, content});
+        setInfoModalVisible(true);
+    };
+
+
     const handleEditProfile = () => router.push('/(app)/account/edit-profile');
     const handleOrderHistory = () => router.push('/(app)/account/order-history/');
     const handleShippingAddresses = () => router.push('/(app)/account/addresses');
     const handleChangePassword = () => router.push('/(app)/account/change-password');
     const handleNotificationSettings = () => router.push('/(app)/notification');
-    const handleHelpCenter = () => Alert.alert("Thông báo", "Chức năng trung tâm trợ giúp sẽ sớm được cập nhật.");
-    const handleAboutApp = () => Alert.alert("BookStore App", "Phiên bản 1.0.0\n© 2025 BookStore Inc.");
-    const handleTermsAndPolicies = () => Alert.alert("Thông báo", "Chức năng chính sách & điều khoản sẽ sớm được cập nhật.");
+
+    const handleHelpCenter = () => handleOpenInfoModal("Trung Tâm Trợ Giúp", "Chào mừng bạn đến với Trung tâm Trợ giúp của BookStore!\n\n" + "Tại đây, bạn có thể tìm thấy câu trả lời cho các câu hỏi thường gặp về:\n" + "- Cách đặt hàng và thanh toán.\n" + "- Chính sách vận chuyển và giao nhận.\n" + "- Quy định đổi trả hàng hóa.\n" + "- Các vấn đề kỹ thuật và tài khoản.\n\n" + "Nếu không tìm thấy thông tin cần thiết, vui lòng liên hệ với chúng tôi qua mục 'Chăm sóc khách hàng' hoặc hotline 1900 1009.\n\n" + "Chúng tôi luôn sẵn sàng hỗ trợ bạn!");
+
+    const handleAboutApp = () => handleOpenInfoModal("Về Ứng Dụng BookStore", "BookStore App - Phiên bản 1.0.0\n\n" + "© 2025 BookStore Inc. Mọi quyền được bảo lưu.\n\n" + "BookStore là ứng dụng mua sắm sách trực tuyến hàng đầu, mang đến cho bạn hàng ngàn đầu sách thuộc mọi thể loại với giá cả cạnh tranh và dịch vụ giao hàng nhanh chóng, tiện lợi.\n\n" + "Tính năng nổi bật:\n" + "- Tìm kiếm sách dễ dàng.\n" + "- Đặt hàng và thanh toán an toàn.\n" + "- Theo dõi đơn hàng trực tuyến.\n" + "- Nhận thông báo về sách mới và khuyến mãi.\n\n" + "Cảm ơn bạn đã tin tưởng và sử dụng BookStore!");
+
+    const handleTermsAndPolicies = () => handleOpenInfoModal("Chính Sách & Điều Khoản", "Chào mừng bạn đến với các điều khoản và chính sách của BookStore.\n\n" + "1. Điều khoản sử dụng:\n" + "   - Vui lòng đọc kỹ các điều khoản trước khi sử dụng ứng dụng...\n\n" + "2. Chính sách bảo mật:\n" + "   - Chúng tôi cam kết bảo vệ thông tin cá nhân của bạn...\n\n" + "3. Chính sách đổi trả:\n" + "   - Sản phẩm được đổi trả trong vòng 7 ngày nếu có lỗi từ nhà sản xuất...\n\n" + "4. Chính sách vận chuyển:\n" + "   - Miễn phí vận chuyển cho đơn hàng từ 200.000đ...\n\n" + "Để biết thêm chi tiết, vui lòng truy cập website của chúng tôi hoặc liên hệ bộ phận hỗ trợ.");
+
 
     const handleLogout = () => {
         Alert.alert("Xác nhận Đăng xuất", "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này?", [{
@@ -158,14 +304,12 @@ function AccountScreen() {
     },];
 
     const supportOptions = [{
-        title: "Trung tâm trợ giúp", iconName: "help-circle-outline", onPress: handleHelpCenter
-    }, {
+        title: "Chăm sóc khách hàng", iconName: "face-agent", onPress: () => setCustomerCareModalVisible(true)
+    }, {title: "Trung tâm trợ giúp", iconName: "help-circle-outline", onPress: handleHelpCenter}, {
         title: "Về ứng dụng", iconName: "information-outline", onPress: handleAboutApp
     }, {title: "Chính sách & Điều khoản", iconName: "shield-check-outline", onPress: handleTermsAndPolicies},];
 
-    // Điều kiện loading: authIsLoading (từ context, cho tải user ban đầu)
-    // isUpdatingProfileImage (local state, cho việc upload ảnh)
-    if (authIsLoading && !localUser) { // Chỉ hiển thị loading toàn màn hình nếu user chưa được tải
+    if (authIsLoading && !localUser) {
         return (<SafeAreaView className="flex-1 justify-center items-center bg-slate-100">
             <ActivityIndicator size="large" color="#0EA5E9"/>
         </SafeAreaView>);
@@ -173,10 +317,7 @@ function AccountScreen() {
 
     const displayName = localUser?.username || localUser?.email || "Người dùng";
     const displayEmail = localUser?.email || "Không có email";
-
     const profileImageUrlToDisplay = localUser?.profileImage ? (localUser.profileImage.startsWith('http') ? localUser.profileImage : `${FILE_DOWNLOAD_PREFIX}${localUser.profileImage}`) : DEFAULT_AVATAR_URL;
-
-    console.log(profileImageUrlToDisplay)
 
     return (<SafeAreaView className="flex-1 bg-slate-100">
         <ScrollView showsVerticalScrollIndicator={false}>
@@ -185,7 +326,7 @@ function AccountScreen() {
                     <Image
                         source={{uri: profileImageUrlToDisplay}}
                         className="w-24 h-24 rounded-full border-4 border-sky-400"
-                        onError={(e) => console.warn("Failed to load profile image in AccountScreen Image:", e.nativeEvent.error, profileImageUrlToDisplay)}
+                        onError={(e) => console.warn("Failed to load profile image:", e.nativeEvent.error, profileImageUrlToDisplay)}
                     />
                     {isUpdatingProfileImage && (
                         <View className="absolute inset-0 justify-center items-center bg-black/30 rounded-full">
@@ -207,8 +348,8 @@ function AccountScreen() {
             <View className="mt-5">
                 <Text className="text-xs font-semibold text-gray-500 uppercase px-4 pb-1">Hỗ trợ & Pháp lý</Text>
                 <View className="bg-white rounded-lg shadow-sm mx-2 overflow-hidden">
-                    {supportOptions.map((item, index) => (
-                        <OptionItem key={index} {...item} disabled={isUpdatingProfileImage || authIsLoading}/>))}
+                    {supportOptions.map((item, index) => (<OptionItem key={index} {...item}
+                                                                      disabled={isUpdatingProfileImage || authIsLoading || isSubmittingContact}/>))}
                 </View>
             </View>
 
@@ -220,12 +361,32 @@ function AccountScreen() {
                         title="Đăng xuất"
                         onPress={handleLogout}
                         isDestructive
-                        disabled={isUpdatingProfileImage || authIsLoading}
+                        disabled={isUpdatingProfileImage || authIsLoading || isSubmittingContact}
                     />
                 </View>
             </View>
         </ScrollView>
+
+        <CustomerCareModal
+            visible={customerCareModalVisible}
+            onClose={() => setCustomerCareModalVisible(false)}
+            onSubmit={handleSubmitCustomerCare}
+            isLoading={isSubmittingContact}
+        />
+        <InfoModal
+            visible={infoModalVisible}
+            title={infoModalContent.title}
+            content={infoModalContent.content}
+            onClose={() => setInfoModalVisible(false)}
+        />
+
     </SafeAreaView>);
 }
+
+const styles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center',
+    },
+});
 
 export default AccountScreen;

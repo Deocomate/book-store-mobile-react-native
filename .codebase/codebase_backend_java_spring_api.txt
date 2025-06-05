@@ -1,16 +1,19 @@
 /* ==========================================================
-   CODEBASE SNAPSHOT - 2025-06-04 14:08:35
+   CODEBASE SNAPSHOT - 2025-06-05 11:59:26
    Project: microservice
-   Files: 421 (421 text, 0 binary)
-   Ignored Items: 94
+   Files: 422 (422 text, 0 binary)
+   Ignored Items: 97
    ========================================================== */
 
 /* PROJECT STRUCTURE
    ------------------------------------------------------------
    .
    ├── .idea/
+   │   ├── dataSources/
    │   ├── .gitignore
    │   ├── compiler.xml
+   │   ├── dataSources.local.xml
+   │   ├── dataSources.xml
    │   ├── encodings.xml
    │   ├── jarRepositories.xml
    │   ├── microservice.iml
@@ -518,7 +521,8 @@
    │   │   │       │   ├── order-created-email-template.html
    │   │   │       │   └── otp-email-template.html
    │   │   │       ├── application-sample.yml
-   │   │   │       └── application.yml
+   │   │   │       ├── application.yml
+   │   │   │       └── bookstore-21cce-firebase-adminsdk-fbsvc-6db9e294b8.json
    │   │   └── test/
    │   │       └── java/
    │   │           └── com/
@@ -11815,7 +11819,7 @@ jwt:
   issuer: identity-service
   passwordResetTokenExpiryMinutes: 15
   otpExpiryMinutes: 5
-  otpRequestCooldownMinutes: 5
+  otpRequestCooldownMinutes: 0
 
 app:
   cart-service:
@@ -12208,6 +12212,30 @@ public class NotificationFirebaseController {
         return new ResponseEntity<>(response, HttpStatus.OK);
 
     }
+
+    @PatchMapping("/my-notification/mark-as-read/{id}")
+    public ResponseEntity<ApiResponse<NotificationResponseToUser>> markNotificationAsRead(@PathVariable String id) {
+        ApiResponse<NotificationResponseToUser> response = notificationProcessingService.markAsRead(id);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @PatchMapping("/my-notification/mark-all-as-read")
+    public ResponseEntity<ApiResponse<String>> markAllNotificationsAsRead() {
+        ApiResponse<String> response = notificationProcessingService.markAllAsRead();
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/my-notification/{id}")
+    public ResponseEntity<ApiResponse<String>> deleteNotification(@PathVariable String id) {
+        ApiResponse<String> response = notificationProcessingService.deleteNotification(id);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/my-notification")
+    public ResponseEntity<ApiResponse<String>> deleteAllNotifications() {
+        ApiResponse<String> response = notificationProcessingService.deleteAllNotification();
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
 }
 
 /* ===== notification-service\src\main\java\com\hau\notificationservice\dto\ApiResponse.java ===== */
@@ -12341,6 +12369,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -12350,6 +12379,7 @@ import java.util.Map;
 @Data
 public class NotificationRequest {
     private Integer userId;
+    private Boolean isRead;
     private String title;
     private String body;
     private String topic;
@@ -12358,6 +12388,7 @@ public class NotificationRequest {
     private List<String> tokens;
     // Dữ liệu bổ sung
     private Map<String, String> data;
+    private LocalDateTime createdAt;
 }
 
 /* ===== notification-service\src\main\java\com\hau\notificationservice\dto\NotificationResponse.java ===== */
@@ -12386,7 +12417,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Map;
 
 @Builder
@@ -12394,11 +12425,14 @@ import java.util.Map;
 @AllArgsConstructor
 @Data
 public class NotificationResponseToUser {
+    private String id;
     private Integer userId;
+    private Boolean isRead;
     private String title;
     private String body;
     private String topic;
     private Map<String, String> data;
+    private LocalDateTime createdAt;
 }
 
 /* ===== notification-service\src\main\java\com\hau\notificationservice\dto\PageResponse.java ===== */
@@ -12486,6 +12520,7 @@ public class Sender {
 package com.hau.notificationservice.entity;
 
 import lombok.*;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
@@ -12496,12 +12531,12 @@ import org.springframework.data.mongodb.core.mapping.MongoId;
 @AllArgsConstructor
 @Builder
 @Document(collection = "fcm_token")
+@CompoundIndex(name = "userId_token_unique_idx", def = "{'userId': 1, 'token': 1}", unique = true)
 public class FcmToken {
     @MongoId
     private String id;
 
     private Integer userId;
-    @Indexed(unique = true)
     private String token;
 }
 
@@ -12510,7 +12545,6 @@ public class FcmToken {
 package com.hau.notificationservice.entity;
 
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoId;
 
@@ -12529,6 +12563,7 @@ public class Notification {
     private String id;
 
     private Integer userId;
+    private Boolean isRead;
     private String title;
     private String body;
     private String topic;
@@ -12536,7 +12571,6 @@ public class Notification {
     private List<String> tokens;
     private Map<String, String> data;
 
-    @CreatedDate
     private LocalDateTime createdAt;
 }
 
@@ -12704,10 +12738,12 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface FcmTokenRepository extends MongoRepository<FcmToken, String> {
     List<FcmToken> findFcmTokenByUserId(Integer userId);
+    Optional<FcmToken> findByUserIdAndToken(Integer userId, String token);
 }
 
 
@@ -12720,9 +12756,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
+
 @Repository
 public interface NotificationRepository extends MongoRepository<Notification, String> {
     Page<Notification> findNotificationByUserId(Integer userId, Pageable pageable);
+    Optional<Notification> findByIdAndUserId(String id, Integer userId);
+    List<Notification> findNotificationByUserId(Integer userId);
 }
 
 
@@ -12907,12 +12948,12 @@ import com.hau.notificationservice.entity.FcmToken;
 import com.hau.notificationservice.exception.AppException;
 import com.hau.notificationservice.repository.FcmTokenRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -12921,24 +12962,30 @@ public class FcmTokenService {
 
     public ApiResponse<FcmTokenResponse> fcmTokenResponseApiResponse(FcmTokenCreateRequest fcmTokenCreateRequest) {
         Integer userId = Integer.valueOf(SecurityContextHolder.getContext().getAuthentication().getName());
-        FcmToken fcmToken = FcmToken.builder()
-                .token(fcmTokenCreateRequest.getToken())
-                .userId(userId)
-                .build();
-        try {
-            fcmToken = fcmTokenRepository.save(fcmToken);
+        String token = fcmTokenCreateRequest.getToken(); // Lấy token từ request
+
+        Optional<FcmToken> existingToken = fcmTokenRepository.findByUserIdAndToken(userId, token);
+
+        if (existingToken.isEmpty()) {
+            FcmToken newFcmToken = FcmToken.builder()
+                    .token(token)
+                    .userId(userId)
+                    .build();
+
+            newFcmToken = fcmTokenRepository.save(newFcmToken);
+
             return ApiResponse.<FcmTokenResponse>builder()
-                    .status(201)
-                    .message("Success")
+                    .status(201) // Created - Tài nguyên mới đã được tạo thành công
+                    .message("FCM Token đã được thêm mới.")
                     .result(FcmTokenResponse.builder()
-                            .id(fcmToken.getId())
-                            .token(fcmToken.getToken())
-                            .userId(userId)
+                            .id(newFcmToken.getId())
+                            .token(newFcmToken.getToken())
+                            .userId(newFcmToken.getUserId())
                             .build())
                     .timestamp(LocalDateTime.now())
                     .build();
-        } catch (DataIntegrityViolationException exception) {
-            throw new AppException(HttpStatus.BAD_REQUEST, "Token already exists", null);
+        } else {
+            throw new AppException(HttpStatus.BAD_REQUEST, "FCM Token đã tồn tại cho người dùng này.", null);
         }
     }
 }
@@ -12954,6 +13001,7 @@ import com.hau.notificationservice.dto.NotificationResponseToUser;
 import com.hau.notificationservice.dto.PageResponse;
 import com.hau.notificationservice.entity.FcmToken;
 import com.hau.notificationservice.entity.Notification;
+import com.hau.notificationservice.exception.AppException;
 import com.hau.notificationservice.mapper.NotificationMapper;
 import com.hau.notificationservice.repository.FcmTokenRepository;
 import com.hau.notificationservice.repository.NotificationRepository;
@@ -12962,6 +13010,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
@@ -12990,11 +13039,13 @@ public class NotificationProcessingService {
         data.put("orderId", notificationEvent.getParams().get("orderId").toString());
         NotificationRequest notificationRequest = NotificationRequest.builder()
                 .userId(userId)
-                .topic("order created")
+                .isRead(false)
+                .topic("Order created")
                 .title("Chúc mừng bạn đã đặt hàng thành công")
                 .body("Đơn hàng của bạn đã được đặt thành công với mã đơn hàng: " + notificationEvent.getParams().get("orderId"))
                 .tokens(tokensToSend)
                 .data(data)
+                .createdAt(LocalDateTime.now())
                 .build();
         Notification notification = notificationMapper.toNotification(notificationRequest);
         notificationRepository.save(notification);
@@ -13017,15 +13068,52 @@ public class NotificationProcessingService {
 
         NotificationRequest notificationRequest = NotificationRequest.builder()
                 .userId(userId)
-                .topic("order updated")
+                .isRead(false)
+                .topic("Order updated")
                 .title("Cập nhật trạng thái đơn hàng")
                 .body(notificationBody)
                 .tokens(tokensToSend)
                 .data(data)
+                .createdAt(LocalDateTime.now())
                 .build();
         Notification notification = notificationMapper.toNotification(notificationRequest);
         notificationRepository.save(notification);
         fcmService.sendMessageToTokens(notificationRequest);
+    }
+
+    public ApiResponse<NotificationResponseToUser> markAsRead(String id) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.valueOf(authentication.getName());
+
+        Notification notification = notificationRepository.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Thông báo không tồn tại", null));
+
+        notification.setIsRead(true);
+        notificationRepository.save(notification);
+
+        NotificationResponseToUser response = notificationMapper.toNotificationResponseToUser(notification);
+        return ApiResponse.<NotificationResponseToUser>builder()
+                .status(200)
+                .message("Đã đọc")
+                .result(response)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    public ApiResponse<String> markAllAsRead() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.valueOf(authentication.getName());
+
+        List<Notification> notifications = notificationRepository.findNotificationByUserId(userId);
+
+        notifications.forEach(notification -> notification.setIsRead(true));
+        notificationRepository.saveAll(notifications);
+
+        return ApiResponse.<String>builder()
+                .status(200)
+                .message("Đã đọc tất cả")
+                .timestamp(LocalDateTime.now())
+                .build();
     }
 
     public ApiResponse<PageResponse<NotificationResponseToUser>> notificationResponseToUser(int pageIndex, int pageSize) {
@@ -13051,6 +13139,35 @@ public class NotificationProcessingService {
                                 .totalPages(notifications.getTotalPages())
                                 .build()
                 )
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    public ApiResponse<String> deleteNotification(String notificationId) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.valueOf(authentication.getName());
+
+        Notification notification = notificationRepository.findByIdAndUserId(notificationId, userId)
+                .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Thông báo không tồn tại", null));
+
+        notificationRepository.delete(notification);
+        return ApiResponse.<String>builder()
+                .status(200)
+                .message("Xoá thông báo thành công")
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    public ApiResponse<String> deleteAllNotification() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        Integer userId = Integer.valueOf(authentication.getName());
+
+        List<Notification> notification = notificationRepository.findNotificationByUserId(userId);
+
+        notificationRepository.deleteAll(notification);
+        return ApiResponse.<String>builder()
+                .status(200)
+                .message("Xoá tất cả thông báo thành công")
                 .timestamp(LocalDateTime.now())
                 .build();
     }
@@ -13202,8 +13319,24 @@ spring:
 app:
   email-service:
     url: https://api.brevo.com
-    api-key:
-  firebase-configuration-file:
+    api-key: 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
+  firebase-configuration-file: bookstore-21cce-firebase-adminsdk-fbsvc-6db9e294b8.json
+
+
+/* ===== notification-service\src\main\resources\bookstore-21cce-firebase-adminsdk-fbsvc-6db9e294b8.json ===== */
+{
+  "type": "service_account",
+  "project_id": "bookstore-21cce",
+  "private_key_id": "6db9e294b8bf06d5918026a042093cea159c017a",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCsEE44lA2c+fCs\npK+jFabShm4Nf8223KJkkmzrEHOTWGa0yePOHCgeVwIE8PZqsJTrdTZt4o4yNryN\nx3cXdMjncHXSVrfkytFcj6L6lXpkWi8PLLN5laemujY+2fZWBEnKzk4khFEYxKE/\nTbMpZMqMwfn4Bzc4+8nqL3FbN90bmqes2Y00f8beFT686v7nVILzPCAieK0uzmpj\nNgxZogMt90bS5SpzZRtUuFqWpecwAVEH5GJZ7qisaq+h2AkPMeZNSH+3iw0SwVlf\n0OZVBe5rjvKod7459CBCJmHGp28dxucsFiYErI6U6fe40t9DTNZ0YSYPBaWD3MB4\nPngu22+ZAgMBAAECggEAInmw5pK5qIyG3dywiW1268M+LUvAgOVzz1Fsa+vzsF/7\n0jkKgTtwiWW3FJzgTs+7QvNNGNbWVXbUsFa5RLSkZYUJwn+YIIpHyTNJfUpyh8Vv\nHOwAuPmUqiow4MaE3kbFL1LHYvc1FZCeW2P65C4bDHl4V6tAdBU1J4xietu2XId7\nV+Ae68Kya2wHbJf2iU+EjXym+ifx6/GoaxQDdUt38o1W4aKTXHgt/H1bxk4ROYBZ\nXP0KavCHTojiNw/fIMnpEQfZmwJK7qFQx6Vxuc711IAFGnfi940TPR33g5A3SCm5\nwaxH5hnJl/oXdVTTaCtvYCLN5Nydu756/7EZPqo99QKBgQDtV9soIu4JD42Cc5Qq\nFTh0mjvaO7vRFchLTrkcMbFPTV6y3vV60Q8XB2/oPnik4mAaHyQLrddgloX7LLym\nrZwphY9HUcvANOpPlo0WavNOWwwz4sUlDEMN4MRtuuwh777+EMoUg1/DjTttr+pQ\niDYREHfmJD9/9FL0eVSyJuDR1QKBgQC5ls5pIEHAupAfHc2YYmFEhUfy6a2eHnEt\nuyz7SCwtuoGJG+hgFjngPd/12lYo8XLlV+CeulfbBY6tHlN21qyLimWxs3kMqOKs\nhUPiBU3nRwIlaUtNhcp6f0Pjg1i3Qw5/KlFTbS1QWD0F7hi7KT3R0ndrfHpnqa/x\n3MPTrEDEtQKBgCmDb3LSwT3WeZLysly1/3ztqUBfqFdG7xS0/U3AJ1pOlxzEQL2t\nqW0GwP0nSCTW76ZCAiUE0CI10dOAHLMutJzSnqAD35aL6tvm4mCkblArPrQomwEC\n5wubX+AtjLXW4FpCB4aVAAANSPLDjUFuwb40WjRn7K9txcC7JCRRBovNAoGAdH1k\nMjg9DWwM6nsagXu+8fN2pdJnV8hj4gCKy28Ry+I1TIpn4WgSC97KpNbXHfvv0mTG\naNsuKhvi4mcWnJFC3JOSIWg1ouye2wsLAOOzcmfvwOvGiHJiFWGsizH2jZFZmBhH\n08XDm5rHMuGwREous3UX4C/R5R9tgLLBeCu2u8ECgYEAg9fq1ry/BQ/HBWtC+5ok\n5zoS6QyStX8LSq9EnqKxiFSu/OdSsLj5lEoDHu+HBf2hgCe8elDxGURQOSze212c\nS5Xn/jTOcvcVHqZb4VohashlMvM5zWspbp7+Dl0F9Ww0IuYpTyW4YRgz86u8MxfV\nRu54U66+piYk3apYNOgQNow=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@bookstore-21cce.iam.gserviceaccount.com",
+  "client_id": "102108601482865473880",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40bookstore-21cce.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
 
 
 /* ===== notification-service\src\main\resources\templates\order-created-email-template.html ===== */
@@ -15047,6 +15180,7 @@ public class OrderProductResponse {
     private String productName;
     private Integer price;
     private Integer quantity;
+    private String thumbnail;
 }
 
 
@@ -15430,7 +15564,10 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface OrderProductMapper {
-    @Mapping(source = "product.id", target = "productId")
+    @Mapping(target = "productId", source = "product.id")
+    @Mapping(target = "thumbnail", expression = "java(orderProduct.getProduct() != null && orderProduct.getProduct().getThumbnail() != null" +
+            " ? \"http://localhost:8888/api/v1/file/media/download/\" + orderProduct.getProduct().getThumbnail()" +
+            " : \"http://localhost:8888/api/v1/file/media/download/default.img\")")
     OrderProductResponse toOrderProductResponse(OrderProduct orderProduct);
 }
 
@@ -19906,7 +20043,6 @@ public class ProductController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @PreAuthorize("hasRole('ADMIN') or hasRole('STAFF')")
     @GetMapping("/{productId}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable Long productId) {
         ApiResponse<ProductResponse> response = productService.getProductById(productId);
@@ -20227,7 +20363,7 @@ public class ProductRequest {
 //    List<String> images;
 
     Boolean active;
-
+    @NotNull(message = "Danh mục không được để trống")
     private List<Long> categoryIds;
 
 }
@@ -23103,6 +23239,7 @@ class ProfileServiceApplicationTests {
 /* Ignored items list: */
 /* Ignored directories: */
 /*   .codebase/ */
+/*   .idea\dataSources/ */
 /*   api-gateway\.mvn/ */
 /*   api-gateway\target/ */
 /*   blog-service\.mvn/ */
@@ -23131,6 +23268,8 @@ class ProfileServiceApplicationTests {
 /*   .gitignore */
 /*   .idea\.gitignore */
 /*   .idea\compiler.xml */
+/*   .idea\dataSources.local.xml */
+/*   .idea\dataSources.xml */
 /*   .idea\encodings.xml */
 /*   .idea\jarRepositories.xml */
 /*   .idea\microservice.iml */

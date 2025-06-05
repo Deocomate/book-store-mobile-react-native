@@ -1,5 +1,5 @@
 // src/services/api.js
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import gAsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { router } from 'expo-router';
 

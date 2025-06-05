@@ -9,7 +9,7 @@ const productService = {
             pageSize,
         };
         try {
-            const response = await api.get('/product', { params });
+            const response = await api.get('/product/active', { params });
             return response; // ApiResponse<PageResponse<ProductResponse>>
         } catch (error) {
             console.error('Get all products failed:', error.message || error);

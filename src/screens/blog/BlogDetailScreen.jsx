@@ -1,9 +1,9 @@
 // src/screens/blog/BlogDetailScreen.jsx
-import { blogService } from '@/services'; // Import blogService
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Stack, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, Share, Text, TouchableOpacity, View } from 'react-native';
+import {blogService} from '@/services'; // Import blogService
+import {Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
+import {Stack, useRouter} from 'expo-router';
+import React, {useCallback, useEffect, useState} from 'react';
+import {ActivityIndicator, Alert, Image, ScrollView, Share, Text, TouchableOpacity, View} from 'react-native';
 
 const formatDate = (isoString) => {
     if (!isoString) return 'N/A';
@@ -18,7 +18,7 @@ const formatDate = (isoString) => {
     }
 };
 
-function BlogDetailScreen({ id: blogId }) { // id từ route params được truyền vào là blogId
+function BlogDetailScreen({id: blogId}) { // id từ route params được truyền vào là blogId
     const [blog, setBlog] = useState(null);
     const [categoryName, setCategoryName] = useState('Chưa phân loại');
     const [loading, setLoading] = useState(true);
@@ -66,10 +66,8 @@ function BlogDetailScreen({ id: blogId }) { // id từ route params được tru
         if (!blog) return;
         try {
             await Share.share({
-                message: `Đọc bài viết thú vị này: ${blog.title} | BookStore App`,
-                // Nên có một domain thực tế hoặc sử dụng deeplink
-                url: `https://mybookstore.app/blog/${blog.slug || blog.id}`,
-                title: blog.title,
+                message: `Đọc bài viết thú vị này: ${blog.title} | BookStore App`, // Nên có một domain thực tế hoặc sử dụng deeplink
+                url: `https://mybookstore.app/blog/${blog.slug || blog.id}`, title: blog.title,
             });
         } catch (error) {
             Alert.alert("Lỗi", "Không thể chia sẻ bài viết.");
@@ -78,18 +76,15 @@ function BlogDetailScreen({ id: blogId }) { // id từ route params được tru
     };
 
     if (loading) {
-        return (
-            <View className="flex-1 justify-center items-center bg-white">
-                <ActivityIndicator size="large" color="#0EA5E9" />
-            </View>
-        );
+        return (<View className="flex-1 justify-center items-center bg-white">
+                <ActivityIndicator size="large" color="#0EA5E9"/>
+            </View>);
     }
 
     if (error || !blog) {
-        return (
-            <View className="flex-1 justify-center items-center bg-slate-50 p-6">
-                <Stack.Screen options={{ title: 'Lỗi' }} />
-                <MaterialCommunityIcons name="alert-circle-outline" size={72} color="#EF4444" />
+        return (<View className="flex-1 justify-center items-center bg-slate-50 p-6">
+                <Stack.Screen options={{title: 'Lỗi'}}/>
+                <MaterialCommunityIcons name="alert-circle-outline" size={72} color="#EF4444"/>
                 <Text className="text-2xl font-semibold text-gray-700 mt-5">
                     {error ? "Lỗi tải bài viết" : "Không tìm thấy bài viết"}
                 </Text>
@@ -102,21 +97,19 @@ function BlogDetailScreen({ id: blogId }) { // id từ route params được tru
                 >
                     <Text className="text-white font-semibold">Quay lại Blog</Text>
                 </TouchableOpacity>
-            </View>
-        );
+            </View>);
     }
     // Author and View Count: Not available in current BlogResponse from blog-service
     // const authorName = blog.author_name || "Người viết ẩn danh";
     // const viewCount = blog.view_count || 0;
 
-    return (
-        <ScrollView className="flex-1 bg-white" showsVerticalScrollIndicator={false}>
+    return (<ScrollView className="flex-1 bg-white" showsVerticalScrollIndicator={false}>
             {/* Sử dụng thumbnail vì API hiện tại chỉ có trường này */}
             <Image
-                source={{ uri: blog.thumbnail }}
+                source={{uri: blog.thumbnail}}
                 className="w-full h-72"
                 contentFit="cover"
-                placeholder={{ uri: 'https://via.placeholder.com/800x400/e0e0e0/999999?text=Blog+Image' }}
+                placeholder={{uri: 'https://via.placeholder.com/800x400/e0e0e0/999999?text=Blog+Image'}}
                 transition={300}
             />
 
@@ -128,7 +121,7 @@ function BlogDetailScreen({ id: blogId }) { // id từ route params được tru
                         {categoryName}
                     </Text>
                     <TouchableOpacity onPress={handleShare} className="p-2">
-                        <Ionicons name="share-social-outline" size={24} color="#4B5563" />
+                        <Ionicons name="share-social-outline" size={24} color="#4B5563"/>
                     </TouchableOpacity>
                 </View>
 
@@ -141,7 +134,7 @@ function BlogDetailScreen({ id: blogId }) { // id từ route params được tru
                 {/* Date Info - Author and View Count removed as not in API response */}
                 <View className="flex-row flex-wrap items-center my-4 text-gray-600 space-x-2 sm:space-x-5">
                     <View className="flex-row items-center mb-2 sm:mb-0">
-                        <MaterialCommunityIcons name="calendar-month-outline" size={18} color="#4B5563" />
+                        <MaterialCommunityIcons name="calendar-month-outline" size={18} color="#4B5563"/>
                         <Text className="text-sm text-gray-700 ml-1.5">{formatDate(blog.createdAt)}</Text>
                     </View>
                     {/* <View className="flex-row items-center mb-2 sm:mb-0">
@@ -155,7 +148,7 @@ function BlogDetailScreen({ id: blogId }) { // id từ route params được tru
                 </View>
 
                 {/* Content Separator */}
-                <View className="border-b border-gray-200 my-6" />
+                <View className="border-b border-gray-200 my-6"/>
 
                 {/* Content - Render HTML if content is HTML, otherwise render as plain text */}
                 {/* For now, assuming plain text or simple HTML that React Native Text can handle.
@@ -173,23 +166,11 @@ function BlogDetailScreen({ id: blogId }) { // id từ route params được tru
                         {[categoryName, "Bài Viết Hay", "Chia Sẻ"].map(tag => (
                             <View key={tag} className="bg-gray-100 rounded-full px-4 py-1.5 mr-2 mb-2 shadow-sm">
                                 <Text className="text-xs text-gray-700 font-medium">{tag.toUpperCase()}</Text>
-                            </View>
-                        ))}
-                    </View>
-                </View>
-
-                {/* Comments Section Placeholder */}
-                <View className="mt-10 pt-8 border-t border-gray-200">
-                    <Text className="text-2xl font-bold text-gray-800 mb-5">Bình luận (0)</Text>
-                    <View className="bg-slate-100 p-6 rounded-lg shadow">
-                        <Text className="text-gray-500 text-center">
-                            Tính năng bình luận hiện đang được phát triển.
-                        </Text>
+                            </View>))}
                     </View>
                 </View>
             </View>
-        </ScrollView>
-    );
+        </ScrollView>);
 }
 
 export default BlogDetailScreen;
