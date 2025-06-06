@@ -1,9 +1,10 @@
-import {useAuth} from '@/contexts/AuthContext';
-import {customerService} from '@/services';
-import {Feather, Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
+import { useAuth } from '@/contexts/AuthContext';
+import { customerService } from '@/services';
+import { dataURIToBlob } from '@/utils/imageUtils';
+import { Feather, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import {useRouter} from 'expo-router';
-import React, {useEffect, useState} from 'react';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -19,19 +20,18 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import {dataURIToBlob} from '@/utils/imageUtils';
 
 const DEFAULT_AVATAR_URL = 'https://placehold.co/200x200/E2E8F0/A0AEC0?text=User';
 const FILE_DOWNLOAD_PREFIX = 'http://172.20.64.1:8888/api/v1/file/media/download/';
 
 const OptionItem = ({
-                        iconName,
-                        iconType = "MaterialCommunityIcons",
-                        title,
-                        onPress,
-                        isDestructive = false,
-                        disabled = false
-                    }) => {
+    iconName,
+    iconType = "MaterialCommunityIcons",
+    title,
+    onPress,
+    isDestructive = false,
+    disabled = false
+}) => {
     const IconComponent = iconType === "Ionicons" ? Ionicons : (iconType === "Feather" ? Feather : MaterialCommunityIcons);
     return (<TouchableOpacity
         onPress={onPress}
@@ -39,16 +39,16 @@ const OptionItem = ({
         className={`flex-row items-center bg-white p-4 border-b border-gray-100 ${disabled ? 'opacity-50' : 'active:bg-gray-50'}`}
     >
         <IconComponent name={iconName} size={22}
-                       color={isDestructive ? "#EF4444" : (disabled ? "#9CA3AF" : "#4B5563")}/>
+            color={isDestructive ? "#EF4444" : (disabled ? "#9CA3AF" : "#4B5563")} />
         <Text
             className={`flex-1 ml-4 text-base ${isDestructive ? 'text-red-600' : (disabled ? 'text-gray-400' : 'text-gray-700')}`}>
             {title}
         </Text>
-        {!isDestructive && !disabled && <Ionicons name="chevron-forward-outline" size={20} color="#9CA3AF"/>}
+        {!isDestructive && !disabled && <Ionicons name="chevron-forward-outline" size={20} color="#9CA3AF" />}
     </TouchableOpacity>);
 };
 
-const InfoModal = ({visible, title, content, onClose}) => (<Modal
+const InfoModal = ({ visible, title, content, onClose }) => (<Modal
     animationType="slide"
     transparent={true}
     visible={visible}
@@ -59,10 +59,10 @@ const InfoModal = ({visible, title, content, onClose}) => (<Modal
             <View className="flex-row justify-between items-center mb-4">
                 <Text className="text-xl font-bold text-sky-700">{title}</Text>
                 <TouchableOpacity onPress={onClose} className="p-1">
-                    <Ionicons name="close-circle" size={28} color="#6B7280"/>
+                    <Ionicons name="close-circle" size={28} color="#6B7280" />
                 </TouchableOpacity>
             </View>
-            <ScrollView style={{maxHeight: 300}}>
+            <ScrollView style={{ maxHeight: 300 }}>
                 <Text className="text-gray-700 text-base leading-relaxed">{content}</Text>
             </ScrollView>
             <TouchableOpacity
@@ -75,7 +75,7 @@ const InfoModal = ({visible, title, content, onClose}) => (<Modal
     </View>
 </Modal>);
 
-const CustomerCareModal = ({visible, onClose, onSubmit, isLoading}) => {
+const CustomerCareModal = ({ visible, onClose, onSubmit, isLoading }) => {
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
@@ -89,20 +89,18 @@ const CustomerCareModal = ({visible, onClose, onSubmit, isLoading}) => {
             setFormError("Vui lòng điền đầy đủ các trường bắt buộc: Họ tên, SĐT, Email và Nội dung.");
             return;
         }
-        // Basic email validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             setFormError("Địa chỉ email không hợp lệ.");
             return;
         }
-        // Basic phone validation (example: 10 digits)
         const phoneRegex = /^\d{10}$/;
         if (!phoneRegex.test(phone)) {
             setFormError("Số điện thoại không hợp lệ (yêu cầu 10 chữ số).");
             return;
         }
 
-        onSubmit({name, phone, email, address: address.trim(), content});
+        onSubmit({ name, phone, email, address: address.trim(), content });
     };
 
     return (<Modal
@@ -119,33 +117,57 @@ const CustomerCareModal = ({visible, onClose, onSubmit, isLoading}) => {
                 <View className="flex-row justify-between items-center mb-4">
                     <Text className="text-xl font-bold text-sky-700">Gửi Yêu Cầu Hỗ Trợ</Text>
                     <TouchableOpacity onPress={onClose} className="p-1" disabled={isLoading}>
-                        <Ionicons name="close-circle" size={28} color="#6B7280"/>
+                        <Ionicons name="close-circle" size={28} color="#6B7280" />
                     </TouchableOpacity>
                 </View>
-                <ScrollView style={{maxHeight: Platform.OS === 'ios' ? 400 : 350}}
-                            keyboardShouldPersistTaps="handled">
+                <ScrollView style={{ maxHeight: Platform.OS === 'ios' ? 400 : 350 }}
+                    keyboardShouldPersistTaps="handled">
                     {formError ? (<View className="bg-red-100 p-3 rounded-md mb-3">
                         <Text className="text-red-700 text-sm">{formError}</Text>
                     </View>) : null}
-                    <View className="space-y-3">
-                        <TextInput value={name} onChangeText={setName} placeholder="Họ và tên (*)"
-                                   className="border border-gray-300 p-3 rounded-lg text-base bg-white"
-                                   editable={!isLoading}/>
-                        <TextInput value={phone} onChangeText={setPhone} placeholder="Số điện thoại (*)"
-                                   keyboardType="phone-pad"
-                                   className="border border-gray-300 p-3 rounded-lg text-base bg-white"
-                                   editable={!isLoading}/>
-                        <TextInput value={email} onChangeText={setEmail} placeholder="Email (*)"
-                                   keyboardType="email-address" autoCapitalize="none"
-                                   className="border border-gray-300 p-3 rounded-lg text-base bg-white"
-                                   editable={!isLoading}/>
-                        <TextInput value={address} onChangeText={setAddress} placeholder="Địa chỉ (Không bắt buộc)"
-                                   className="border border-gray-300 p-3 rounded-lg text-base bg-white"
-                                   editable={!isLoading}/>
-                        <TextInput value={content} onChangeText={setContent} placeholder="Nội dung yêu cầu (*)"
-                                   multiline numberOfLines={4}
-                                   className="border border-gray-300 p-3 rounded-lg text-base h-28 bg-white"
-                                   textAlignVertical="top" editable={!isLoading}/>
+                    {/* Thay đổi: Tăng khoảng cách với space-y-4 */}
+                    <View className="space-y-4">
+                        <TextInput
+                            value={name}
+                            onChangeText={setName}
+                            placeholder="Họ và tên (*)"
+                            placeholderTextColor="#9CA3AF" // Thêm: Màu cho placeholder
+                            className="border border-gray-300 p-3 rounded-lg text-base bg-white focus:border-sky-500 mb-3" // Thêm: Style khi focus
+                            editable={!isLoading} />
+                        <TextInput
+                            value={phone}
+                            onChangeText={setPhone}
+                            placeholder="Số điện thoại (*)"
+                            placeholderTextColor="#9CA3AF" // Thêm: Màu cho placeholder
+                            keyboardType="phone-pad"
+                            className="border border-gray-300 p-3 rounded-lg text-base bg-white focus:border-sky-500 mb-3" // Thêm: Style khi focus
+                            editable={!isLoading} />
+                        <TextInput
+                            value={email}
+                            onChangeText={setEmail}
+                            placeholder="Email (*)"
+                            placeholderTextColor="#9CA3AF" // Thêm: Màu cho placeholder
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            className="border border-gray-300 p-3 rounded-lg text-base bg-white focus:border-sky-500 mb-3" // Thêm: Style khi focus
+                            editable={!isLoading} />
+                        <TextInput
+                            value={address}
+                            onChangeText={setAddress}
+                            placeholder="Địa chỉ (Không bắt buộc)"
+                            placeholderTextColor="#9CA3AF" // Thêm: Màu cho placeholder
+                            className="border border-gray-300 p-3 rounded-lg text-base bg-white focus:border-sky-500 mb-3" // Thêm: Style khi focus
+                            editable={!isLoading} />
+                        <TextInput
+                            value={content}
+                            onChangeText={setContent}
+                            placeholder="Nội dung yêu cầu (*)"
+                            placeholderTextColor="#9CA3AF" // Thêm: Màu cho placeholder
+                            multiline
+                            numberOfLines={4}
+                            className="border border-gray-300 p-3 rounded-lg text-base h-28 bg-white focus:border-sky-500" // Thêm: Style khi focus
+                            textAlignVertical="top"
+                            editable={!isLoading} />
                     </View>
                 </ScrollView>
                 <TouchableOpacity
@@ -153,7 +175,7 @@ const CustomerCareModal = ({visible, onClose, onSubmit, isLoading}) => {
                     disabled={isLoading}
                     className={`mt-5 py-3 rounded-lg shadow ${isLoading ? 'bg-sky-300' : 'bg-sky-500 active:bg-sky-600'}`}
                 >
-                    {isLoading ? <ActivityIndicator color="white"/> :
+                    {isLoading ? <ActivityIndicator color="white" /> :
                         <Text className="text-white text-center font-semibold text-base">Gửi Yêu Cầu</Text>}
                 </TouchableOpacity>
             </View>
@@ -164,7 +186,7 @@ const CustomerCareModal = ({visible, onClose, onSubmit, isLoading}) => {
 
 function AccountScreen() {
     const router = useRouter();
-    const {user, logout, updateMyProfileImage, isLoading: authIsLoading} = useAuth();
+    const { user, logout, updateMyProfileImage, isLoading: authIsLoading } = useAuth();
     const [isUpdatingProfileImage, setIsUpdatingProfileImage] = useState(false);
     const [localUser, setLocalUser] = useState(user);
 
@@ -172,7 +194,7 @@ function AccountScreen() {
     const [isSubmittingContact, setIsSubmittingContact] = useState(false);
 
     const [infoModalVisible, setInfoModalVisible] = useState(false);
-    const [infoModalContent, setInfoModalContent] = useState({title: '', content: ''});
+    const [infoModalContent, setInfoModalContent] = useState({ title: '', content: '' });
 
 
     useEffect(() => {
@@ -181,7 +203,7 @@ function AccountScreen() {
 
     const requestMediaLibraryPermissions = async () => {
         if (Platform.OS !== 'web') {
-            const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
                 Alert.alert('Quyền truy cập bị từ chối', 'Rất tiếc, chúng tôi cần quyền truy cập thư viện ảnh để bạn có thể thay đổi ảnh đại diện!');
                 return false;
@@ -271,7 +293,7 @@ function AccountScreen() {
 
 
     const handleOpenInfoModal = (title, content) => {
-        setInfoModalContent({title, content});
+        setInfoModalContent({ title, content });
         setInfoModalVisible(true);
     };
 
@@ -292,26 +314,26 @@ function AccountScreen() {
     const handleLogout = () => {
         Alert.alert("Xác nhận Đăng xuất", "Bạn có chắc chắn muốn đăng xuất khỏi tài khoản này?", [{
             text: "Hủy", style: "cancel"
-        }, {text: "Đăng xuất", onPress: async () => await logout(), style: "destructive"}]);
+        }, { text: "Đăng xuất", onPress: async () => await logout(), style: "destructive" }]);
     };
 
     const accountOptions = [{
         title: "Chỉnh sửa thông tin", iconName: "account-edit-outline", onPress: handleEditProfile
-    }, {title: "Lịch sử đơn hàng", iconName: "history", onPress: handleOrderHistory}, {
+    }, { title: "Lịch sử đơn hàng", iconName: "history", onPress: handleOrderHistory }, {
         title: "Địa chỉ giao hàng", iconName: "map-marker-outline", onPress: handleShippingAddresses
-    }, {title: "Đổi mật khẩu", iconName: "lock-reset", onPress: handleChangePassword}, {
+    }, { title: "Đổi mật khẩu", iconName: "lock-reset", onPress: handleChangePassword }, {
         title: "Cài đặt thông báo", iconName: "bell-outline", onPress: handleNotificationSettings
     },];
 
     const supportOptions = [{
         title: "Chăm sóc khách hàng", iconName: "face-agent", onPress: () => setCustomerCareModalVisible(true)
-    }, {title: "Trung tâm trợ giúp", iconName: "help-circle-outline", onPress: handleHelpCenter}, {
+    }, { title: "Trung tâm trợ giúp", iconName: "help-circle-outline", onPress: handleHelpCenter }, {
         title: "Về ứng dụng", iconName: "information-outline", onPress: handleAboutApp
-    }, {title: "Chính sách & Điều khoản", iconName: "shield-check-outline", onPress: handleTermsAndPolicies},];
+    }, { title: "Chính sách & Điều khoản", iconName: "shield-check-outline", onPress: handleTermsAndPolicies },];
 
     if (authIsLoading && !localUser) {
         return (<SafeAreaView className="flex-1 justify-center items-center bg-slate-100">
-            <ActivityIndicator size="large" color="#0EA5E9"/>
+            <ActivityIndicator size="large" color="#0EA5E9" />
         </SafeAreaView>);
     }
 
@@ -324,13 +346,13 @@ function AccountScreen() {
             <View className="bg-sky-500 p-6 pt-10 items-center">
                 <TouchableOpacity onPress={handlePickImage} disabled={isUpdatingProfileImage || authIsLoading}>
                     <Image
-                        source={{uri: profileImageUrlToDisplay}}
+                        source={{ uri: profileImageUrlToDisplay }}
                         className="w-24 h-24 rounded-full border-4 border-sky-400"
                         onError={(e) => console.warn("Failed to load profile image:", e.nativeEvent.error, profileImageUrlToDisplay)}
                     />
                     {isUpdatingProfileImage && (
                         <View className="absolute inset-0 justify-center items-center bg-black/30 rounded-full">
-                            <ActivityIndicator color="#FFFFFF"/>
+                            <ActivityIndicator color="#FFFFFF" />
                         </View>)}
                 </TouchableOpacity>
                 <Text className="text-2xl font-bold text-white mt-3">{displayName}</Text>
@@ -341,7 +363,7 @@ function AccountScreen() {
                 <Text className="text-xs font-semibold text-gray-500 uppercase px-4 pb-1">Tài khoản</Text>
                 <View className="bg-white rounded-lg shadow-sm mx-2 overflow-hidden">
                     {accountOptions.map((item, index) => (<OptionItem key={index} {...item}
-                                                                      disabled={(isUpdatingProfileImage || authIsLoading) && item.onPress !== handleEditProfile}/>))}
+                        disabled={(isUpdatingProfileImage || authIsLoading) && item.onPress !== handleEditProfile} />))}
                 </View>
             </View>
 
@@ -349,7 +371,7 @@ function AccountScreen() {
                 <Text className="text-xs font-semibold text-gray-500 uppercase px-4 pb-1">Hỗ trợ & Pháp lý</Text>
                 <View className="bg-white rounded-lg shadow-sm mx-2 overflow-hidden">
                     {supportOptions.map((item, index) => (<OptionItem key={index} {...item}
-                                                                      disabled={isUpdatingProfileImage || authIsLoading || isSubmittingContact}/>))}
+                        disabled={isUpdatingProfileImage || authIsLoading || isSubmittingContact} />))}
                 </View>
             </View>
 
