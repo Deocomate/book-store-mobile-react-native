@@ -24,7 +24,7 @@ const ReviewItem = React.memo(({ review }) => {
         <View className="bg-white p-4 mb-3 mx-3 rounded-lg shadow">
             <View className="flex-row justify-between items-center mb-1">
                 {/* userId từ backend là dạng number, không có username */}
-                <Text className="font-semibold text-gray-700">Người dùng ID: {review.userId}</Text>
+                <Text className="font-semibold text-gray-700">{review.username}</Text>
                 <StarRating rating={review.vote} size={14} showText={false} />
             </View>
             <Text className="text-xs text-gray-500 mb-2">{reviewDate}</Text>

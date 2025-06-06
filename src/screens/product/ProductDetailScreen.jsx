@@ -33,7 +33,7 @@ const ReviewItem = ({ review }) => {
     return (
         <View className="py-3 border-b border-gray-200">
             <View className="flex-row justify-between items-center mb-1">
-                <Text className="font-semibold text-gray-700">Người dùng ID: {review.userId}</Text> 
+                <Text className="font-semibold text-gray-700">{review.username}</Text>
                 <StarRating rating={review.vote} size={14} showText={false} />
             </View>
             <Text className="text-xs text-gray-500 mb-1.5">{reviewDate}</Text>
@@ -69,6 +69,9 @@ function ProductDetailScreen({ id: productId }) {
         try {
             // 1. Fetch product details
             const productResponse = await productService.getProductById(productId);
+
+            console.log("productResponse: ", productResponse);
+
             if (productResponse && productResponse.status === 200 && productResponse.result) {
                 setProduct(productResponse.result);
                 setQuantity(1); // Reset quantity to 1 when a new product is loaded
@@ -92,6 +95,7 @@ function ProductDetailScreen({ id: productId }) {
                 // 3. Fetch product reviews (first few reviews)
                 const reviewsResponse = await productService.getRatesByProductId(productId, 1, 5); // Fetch first 5 reviews
                 if (reviewsResponse && reviewsResponse.status === 200 && reviewsResponse.result && reviewsResponse.result.data) {
+                    console.log("reviewResponse: ", reviewsResponse);
                     setReviews(reviewsResponse.result.data);
                 }
 
@@ -159,7 +163,7 @@ function ProductDetailScreen({ id: productId }) {
         <Image
             source={{ uri: item }} // API trả về URL đầy đủ
             style={{ width: screenWidth, height: 400 }} // Đảm bảo width bằng chiều rộng màn hình
-            resizeMode="contain" // Chế độ hiển thị ảnh
+            resizeMode="cover" // Chế độ hiển thị ảnh
             placeholder={{ uri: 'https://via.placeholder.com/600x800/e0e0e0/999999?text=Book+Image' }}
             transition={300}
         />
@@ -301,7 +305,7 @@ function ProductDetailScreen({ id: productId }) {
                     <View className="flex-row justify-between items-center mb-2">
                         <Text className="text-lg font-semibold text-gray-800">Đánh giá sản phẩm ({reviews.length})</Text>
                         {reviews.length > 0 && (
-                            <TouchableOpacity onPress={handleViewAllReviews}> 
+                            <TouchableOpacity onPress={handleViewAllReviews}>
                                 <Text className="text-sm text-sky-600 font-medium">Xem tất cả</Text>
                             </TouchableOpacity>
                         )}
@@ -339,7 +343,7 @@ function ProductDetailScreen({ id: productId }) {
                 <TouchableOpacity
                     onPress={handleAddToCart}
                     disabled={isOutOfStock || isAddingToCart}
-                    className={`flex-1 py-3.5 rounded-lg shadow ${isOutOfStock || isAddingToCart ? 'bg-gray-400' : 'bg-sky-500 active:bg-sky-600'}`}
+                    className={`ms-3 flex-1 py-3.5 rounded-lg shadow ${isOutOfStock || isAddingToCart ? 'bg-gray-400' : 'bg-sky-500 active:bg-sky-600'}`}
                 >
                     {isAddingToCart ? (
                         <ActivityIndicator color="#FFFFFF" />

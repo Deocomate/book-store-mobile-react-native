@@ -1,32 +1,43 @@
-import {blogService, productService} from '@/services';
-import {FontAwesome, Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
-import {useRouter} from 'expo-router';
-import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, Alert, FlatList, Image, ScrollView, Text, TouchableOpacity, View} from 'react-native';
+import { blogService, productService } from '@/services';
+import { FontAwesome, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    FlatList, Image, ScrollView,
+    StyleSheet,
+    Text, TouchableOpacity, View
+} from 'react-native';
 
-const StarRating = ({rating, size = 14, reviewCount = 0}) => {
+const StarRating = ({ rating, size = 14, reviewCount = 0 }) => {
     const fullStars = Math.floor(rating);
     const halfStar = rating % 1 >= 0.5;
     const emptyStars = 5 - fullStars - (halfStar ? 1 : 0);
     return (<View className="flex-row items-center">
         {[...Array(fullStars)].map((_, i) => <FontAwesome key={`full_${i}`} name="star" size={size}
-                                                          color="#FFC107"/>)}
-        {halfStar && <FontAwesome name="star-half-empty" size={size} color="#FFC107"/>}
+            color="#FFC107" />)}
+        {halfStar && <FontAwesome name="star-half-empty" size={size} color="#FFC107" />}
         {[...Array(emptyStars)].map((_, i) => <FontAwesome key={`empty_${i}`} name="star-o" size={size}
-                                                           color="#FFC107"/>)}
+            color="#FFC107" />)}
         <Text
             className="text-xs text-gray-600 ml-1">{rating ? rating.toFixed(1) : 'Mới'}{reviewCount > 0 ? ` (${reviewCount})` : ''}</Text>
     </View>);
 };
 
-const ProductCard = ({product, onPress}) => {
+let styles = StyleSheet.create({
+    stretch: {
+        resizeMode: 'stretch',
+    },
+});
+
+const ProductCard = ({ product, onPress }) => {
     return (<TouchableOpacity onPress={onPress}
-                              className="bg-white rounded-lg shadow-md p-3 m-2 w-40 overflow-hidden active:opacity-80">
+        className="bg-white rounded-lg shadow-md p-3 m-2 w-40 overflow-hidden active:opacity-80">
         <Image
-            source={{uri: product.thumbnail}}
+            source={{ uri: product.thumbnail }}
             className="w-full h-48 rounded-md"
             contentFit="cover"
-            placeholder={{uri: 'https://via.placeholder.com/200x300/e0e0e0/999999?text=Book'}}
+            placeholder={{ uri: 'https://via.placeholder.com/200x300/e0e0e0/999999?text=Book' }}
             transition={300}
         />
         <Text className="text-sm font-semibold mt-2 text-gray-800" numberOfLines={2}>{product.title}</Text>
@@ -44,7 +55,7 @@ const ProductCard = ({product, onPress}) => {
                 className="text-white text-[10px] font-semibold">-{Math.round(product.discountPercent)}%</Text>
         </View>)}
         <View className="mt-1">
-            <StarRating rating={product.averageRate} reviewCount={product.rates?.length || 0}/>
+            <StarRating rating={product.averageRate} reviewCount={product.rates?.length || 0} />
         </View>
     </TouchableOpacity>);
 };
@@ -64,13 +75,13 @@ const categoryIcons = {
     "Default": "tag-outline"
 };
 
-const CategoryChip = ({category, onPress}) => {
+const CategoryChip = ({ category, onPress }) => {
     const iconName = categoryIcons[category.name] || categoryIcons["Default"];
     return (<TouchableOpacity
         onPress={onPress}
         className="bg-sky-100 rounded-lg p-3 m-1.5 items-center w-24 h-24 justify-center shadow active:bg-sky-200"
     >
-        <MaterialCommunityIcons name={iconName} size={28} color="#0369A1"/>
+        <MaterialCommunityIcons name={iconName} size={28} color="#0369A1" />
         <Text className="text-xs text-sky-700 font-medium mt-1.5 text-center" numberOfLines={2}>
             {category.name}
         </Text>
@@ -84,16 +95,16 @@ const createExcerpt = (content, maxLength = 100) => {
     return plainText.substring(0, maxLength).trim() + "...";
 };
 
-const BlogPostItem = ({post, onPress}) => {
+const BlogPostItem = ({ post, onPress }) => {
     return (<TouchableOpacity
         onPress={onPress}
         className="bg-white rounded-lg shadow p-3 mx-4 mb-3 flex-row items-start active:bg-gray-50"
     >
         <Image
-            source={{uri: post.thumbnail}}
+            source={{ uri: post.thumbnail }}
             className="w-24 h-24 rounded-md mr-3"
             contentFit="cover"
-            placeholder={{uri: 'https://via.placeholder.com/200x200/e0e0e0/999999?text=Blog'}}
+            placeholder={{ uri: 'https://via.placeholder.com/200x200/e0e0e0/999999?text=Blog' }}
             transition={300}
         />
         <View className="flex-1">
@@ -104,41 +115,49 @@ const BlogPostItem = ({post, onPress}) => {
     </TouchableOpacity>);
 };
 
-const PromotionalBanner = ({title, subtitle, imageUrl, ctaText, onPress}) => {
+const PromotionalBanner = ({ title, subtitle, imageUrl, ctaText, onPress }) => {
     return (<TouchableOpacity onPress={onPress}
-                              className="mx-4 my-4 rounded-xl overflow-hidden shadow-lg aspect-[16/7] active:opacity-90">
-        <Image source={{uri: imageUrl}} className="absolute inset-0 w-full h-full" contentFit="cover"/>
+        // Đã xóa mx-4 và rounded-xl để banner full-width
+        className="mb-4 w-full overflow-hidden shadow-lg aspect-[16/7] active:opacity-90">
+        <Image source={{ uri: imageUrl }} className="absolute inset-0 w-full h-full" contentFit="cover" />
         <View className="absolute inset-0 bg-black/40 p-4 flex justify-end">
-            <Text className="text-white text-xl font-bold" style={{
-                textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: {width: 0, height: 1}, textShadowRadius: 2
+            <Text className="text-white text-2xl font-bold" style={{
+                textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2
             }}>
                 {title}
             </Text>
             <Text className="text-gray-200 text-sm mt-0.5" style={{
-                textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: {width: 0, height: 1}, textShadowRadius: 2
+                textShadowColor: 'rgba(0, 0, 0, 0.75)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2
             }}>
                 {subtitle}
             </Text>
-            {ctaText && (<View className="mt-2 self-start bg-white/90 px-3 py-1.5 rounded-md shadow">
-                <Text className="text-sky-700 font-semibold text-xs">{ctaText}</Text>
+            {ctaText && (<View className="mt-3 self-start bg-white/95 px-4 py-2 rounded-lg shadow">
+                <Text className="text-sky-700 font-semibold text-sm">{ctaText}</Text>
             </View>)}
         </View>
     </TouchableOpacity>);
 };
 
-const SectionLoading = () => (<View className="h-48 justify-center items-center">
-    <ActivityIndicator size="large" color="#0EA5E9"/>
+const SectionHeader = ({ title, onSeeAll }) => (<View className="flex-row justify-between items-center px-4 mb-2 mt-4">
+    <Text className="text-xl font-bold text-gray-800">{title}</Text>
+    <TouchableOpacity onPress={onSeeAll} className="flex-row items-center p-2 -mr-2">
+        <Text className="text-sm text-sky-600 font-semibold">Xem tất cả</Text>
+        <Ionicons name="chevron-forward" size={16} color="#0284c7" />
+    </TouchableOpacity>
 </View>);
 
-const SectionError = ({message, onRetry}) => (
+const SectionLoading = () => (<View className="h-48 justify-center items-center">
+    <ActivityIndicator size="large" color="#0EA5E9" />
+</View>);
+
+const SectionError = ({ message, onRetry }) => (
     <View className="h-48 justify-center items-center p-4 bg-red-50 rounded-md mx-4 my-2 border border-red-200">
-        <Ionicons name="alert-circle-outline" size={32} color="#EF4444"/>
+        <Ionicons name="alert-circle-outline" size={32} color="#EF4444" />
         <Text className="text-red-600 text-center mt-2 mb-3">{message || "Không thể tải dữ liệu."}</Text>
         {onRetry && (<TouchableOpacity onPress={onRetry} className="bg-red-500 px-4 py-2 rounded-md">
             <Text className="text-white font-semibold text-sm">Thử lại</Text>
         </TouchableOpacity>)}
     </View>);
-
 
 function HomeScreen() {
     const router = useRouter();
@@ -157,25 +176,25 @@ function HomeScreen() {
     });
 
     const fetchNewestProducts = async () => {
-        setLoading(prev => ({...prev, newest: true}));
-        setError(prev => ({...prev, newest: null}));
+        setLoading(prev => ({ ...prev, newest: true }));
+        setError(prev => ({ ...prev, newest: null }));
         try {
-            const response = await productService.getActiveProducts({sortBy: 'createdAt', sortDir: 'DESC'}, 1, 6);
+            const response = await productService.getActiveProducts({ sortBy: 'createdAt', sortDir: 'DESC' }, 1, 6);
             if (response && response.status === 200 && response.result && response.result.data) {
                 setNewestProducts(response.result.data);
             } else {
                 throw new Error(response?.message || "Không thể tải sách mới nhất");
             }
         } catch (err) {
-            setError(prev => ({...prev, newest: err.message || "Lỗi tải sách mới"}));
+            setError(prev => ({ ...prev, newest: err.message || "Lỗi tải sách mới" }));
         } finally {
-            setLoading(prev => ({...prev, newest: false}));
+            setLoading(prev => ({ ...prev, newest: false }));
         }
     };
 
     const fetchFeaturedCategories = async () => {
-        setLoading(prev => ({...prev, categories: true}));
-        setError(prev => ({...prev, categories: null}));
+        setLoading(prev => ({ ...prev, categories: true }));
+        setError(prev => ({ ...prev, categories: null }));
         try {
             const response = await productService.getProductCategories();
             if (response && response.status === 200 && response.result) {
@@ -187,15 +206,15 @@ function HomeScreen() {
                 throw new Error(response?.message || "Không thể tải danh mục");
             }
         } catch (err) {
-            setError(prev => ({...prev, categories: err.message || "Lỗi tải danh mục"}));
+            setError(prev => ({ ...prev, categories: err.message || "Lỗi tải danh mục" }));
         } finally {
-            setLoading(prev => ({...prev, categories: false}));
+            setLoading(prev => ({ ...prev, categories: false }));
         }
     };
 
     const fetchBestSellerProducts = async () => {
-        setLoading(prev => ({...prev, bestSellers: true}));
-        setError(prev => ({...prev, bestSellers: null}));
+        setLoading(prev => ({ ...prev, bestSellers: true }));
+        setError(prev => ({ ...prev, bestSellers: null }));
         try {
             const response = await productService.getTopRatingProducts();
             if (response && response.status === 200 && response.result) {
@@ -204,15 +223,15 @@ function HomeScreen() {
                 throw new Error(response?.message || "Không thể tải sách bán chạy");
             }
         } catch (err) {
-            setError(prev => ({...prev, bestSellers: err.message || "Lỗi tải sách bán chạy"}));
+            setError(prev => ({ ...prev, bestSellers: err.message || "Lỗi tải sách bán chạy" }));
         } finally {
-            setLoading(prev => ({...prev, bestSellers: false}));
+            setLoading(prev => ({ ...prev, bestSellers: false }));
         }
     };
 
     const fetchDiscountedProducts = async () => {
-        setLoading(prev => ({...prev, discounted: true}));
-        setError(prev => ({...prev, discounted: null}));
+        setLoading(prev => ({ ...prev, discounted: true }));
+        setError(prev => ({ ...prev, discounted: null }));
         try {
             const response = await productService.getTopDiscountProducts();
             if (response && response.status === 200 && response.result) {
@@ -221,27 +240,26 @@ function HomeScreen() {
                 throw new Error(response?.message || "Không thể tải sản phẩm khuyến mãi");
             }
         } catch (err) {
-            setError(prev => ({...prev, discounted: err.message || "Lỗi tải sản phẩm khuyến mãi"}));
+            setError(prev => ({ ...prev, discounted: err.message || "Lỗi tải sản phẩm khuyến mãi" }));
         } finally {
-            setLoading(prev => ({...prev, discounted: false}));
+            setLoading(prev => ({ ...prev, discounted: false }));
         }
     };
 
-
     const fetchLatestBlogs = async () => {
-        setLoading(prev => ({...prev, blogs: true}));
-        setError(prev => ({...prev, blogs: null}));
+        setLoading(prev => ({ ...prev, blogs: true }));
+        setError(prev => ({ ...prev, blogs: null }));
         try {
-            const response = await blogService.getAllBlogs({sortDirection: 'DESC'}, 1, 3);
+            const response = await blogService.getAllBlogs({ sortDirection: 'DESC' }, 1, 3);
             if (response && response.status === 200 && response.result && response.result.data) {
                 setLatestBlogs(response.result.data);
             } else {
                 throw new Error(response?.message || "Không thể tải bài viết mới");
             }
         } catch (err) {
-            setError(prev => ({...prev, blogs: err.message || "Lỗi tải bài viết"}));
+            setError(prev => ({ ...prev, blogs: err.message || "Lỗi tải bài viết" }));
         } finally {
-            setLoading(prev => ({...prev, blogs: false}));
+            setLoading(prev => ({ ...prev, blogs: false }));
         }
     };
 
@@ -256,112 +274,101 @@ function HomeScreen() {
     const handleProductPress = (product) => router.push(`/(app)/product/${product.id}`);
     const handleCategoryPress = (category) => router.push(`/(app)/product?category_id=${category.id}&category_name=${encodeURIComponent(category.name)}`);
     const handleBlogPostPress = (post) => router.push(`/(app)/blog/${post.id || post.id}`);
-    const handleBannerPress = () => Alert.alert("Khuyến mãi", "Xem chi tiết các chương trình khuyến mãi (đang phát triển).");
-
 
     return (<ScrollView className="flex-1 bg-slate-50" showsVerticalScrollIndicator={false}>
-        <View className="p-5 bg-sky-600">
-            <Text className="text-2xl font-bold text-white">Chào mừng trở lại!</Text>
-            <Text className="text-sm text-sky-100 mt-1">Khám phá những cuốn sách yêu thích của bạn.</Text>
+        {/* Search Header */}
+        <View className="p-4 bg-sky-600">
+            <TouchableOpacity
+                onPress={() => router.push('/(app)/product/')}
+                className="bg-white rounded-full flex-row items-center px-4 py-3 shadow-md"
+            >
+                <Ionicons name="search" size={20} color="#64748b" />
+                <Text className="text-gray-500 ml-3 text-base">Tìm kiếm sách, tác giả...</Text>
+            </TouchableOpacity>
         </View>
 
+        {/* Promotional Banner */}
         <PromotionalBanner
             title="Ưu Đãi Giữa Năm!"
             subtitle="Giảm giá đến 50% cho hàng ngàn đầu sách."
             imageUrl="https://picsum.photos/seed/midyearbooks/800/350"
-            ctaText="Xem Ngay"
-            onPress={handleBannerPress}
+            ctaText="Khám phá ngay"
+            onPress={() => router.push('/(app)/product/')}
         />
 
+        {/* Newest Products Section */}
         <View className="my-3">
-            <View className="flex-row justify-between items-center px-4 mb-1">
-                <Text className="text-xl font-semibold text-gray-800">Sách Mới Nhất</Text>
-                <TouchableOpacity onPress={() => router.push('/(app)/product?sort_by=createdAt&sort_dir=DESC')}>
-                    <Text className="text-sm text-sky-600 font-medium">Xem tất cả</Text>
-                </TouchableOpacity>
-            </View>
-            {loading.newest ? <SectionLoading/> : error.newest ?
-                <SectionError message={error.newest} onRetry={fetchNewestProducts}/> : (<FlatList
+            <SectionHeader title="Sách Mới Nhất"
+                onSeeAll={() => router.push('/(app)/product?sort_by=createdAt&sort_dir=DESC')} />
+            {loading.newest ? <SectionLoading /> : error.newest ?
+                <SectionError message={error.newest} onRetry={fetchNewestProducts} /> : (<FlatList
                     data={newestProducts}
-                    renderItem={({item}) => <ProductCard product={item}
-                                                         onPress={() => handleProductPress(item)}/>}
+                    renderItem={({ item }) => <ProductCard product={item}
+                        onPress={() => handleProductPress(item)} />}
                     keyExtractor={item => `newest_${item.id.toString()}`}
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{paddingHorizontal: 10, paddingVertical: 8}}
+                    contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8 }}
                 />)}
         </View>
 
+        {/* Featured Categories Section */}
         <View className="my-3">
-            <View className="flex-row justify-between items-center px-4 mb-1">
-                <Text className="text-xl font-semibold text-gray-800">Danh Mục Nổi Bật</Text>
-                <TouchableOpacity onPress={() => router.push('/(app)/product/')}>
-                    <Text className="text-sm text-sky-600 font-medium">Xem tất cả</Text>
-                </TouchableOpacity>
-            </View>
-            {loading.categories ? <SectionLoading/> : error.categories ?
-                <SectionError message={error.categories} onRetry={fetchFeaturedCategories}/> : (<FlatList
+            <SectionHeader title="Danh Mục Nổi Bật" onSeeAll={() => router.push('/(app)/product/')} />
+            {loading.categories ? <SectionLoading /> : error.categories ?
+                <SectionError message={error.categories} onRetry={fetchFeaturedCategories} /> : (<FlatList
                     data={featuredCategories}
-                    renderItem={({item}) => <CategoryChip category={item}
-                                                          onPress={() => handleCategoryPress(item)}/>}
+                    renderItem={({ item }) => <CategoryChip category={item}
+                        onPress={() => handleCategoryPress(item)} />}
                     keyExtractor={item => `cat_${item.id.toString()}`}
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{paddingHorizontal: 10, paddingVertical: 8}}
+                    contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8 }}
                 />)}
         </View>
 
+        {/* Best Sellers Section */}
         <View className="my-3">
-            <View className="flex-row justify-between items-center px-4 mb-1">
-                <Text className="text-xl font-semibold text-gray-800">Sách Bán Chạy</Text>
-                <TouchableOpacity onPress={() => router.push('/(app)/product?sort_by=averageRate&sort_dir=DESC')}>
-                    <Text className="text-sm text-sky-600 font-medium">Xem tất cả</Text>
-                </TouchableOpacity>
-            </View>
-            {loading.bestSellers ? <SectionLoading/> : error.bestSellers ?
-                <SectionError message={error.bestSellers} onRetry={fetchBestSellerProducts}/> : (<FlatList
+            <SectionHeader title="Sách Bán Chạy"
+                onSeeAll={() => router.push('/(app)/product?sort_by=averageRate&sort_dir=DESC')} />
+            {loading.bestSellers ? <SectionLoading /> : error.bestSellers ?
+                <SectionError message={error.bestSellers} onRetry={fetchBestSellerProducts} /> : (<FlatList
                     data={bestSellerProducts}
-                    renderItem={({item}) => <ProductCard product={item}
-                                                         onPress={() => handleProductPress(item)}/>}
+                    renderItem={({ item }) => <ProductCard product={item}
+                        onPress={() => handleProductPress(item)} />}
                     keyExtractor={item => `bestseller_${item.id.toString()}`}
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{paddingHorizontal: 10, paddingVertical: 8}}
+                    contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8 }}
                 />)}
         </View>
 
+        {/* Discounted Products Section */}
         <View className="my-3">
-            <View className="flex-row justify-between items-center px-4 mb-1">
-                <Text className="text-xl font-semibold text-gray-800">Sản Phẩm Khuyến Mãi</Text>
-                <TouchableOpacity onPress={() => router.push('/(app)/product?sort_by=discountPercent&sort_dir=DESC')}>
-                    <Text className="text-sm text-sky-600 font-medium">Xem tất cả</Text>
-                </TouchableOpacity>
-            </View>
-            {loading.discounted ? <SectionLoading/> : error.discounted ?
-                <SectionError message={error.discounted} onRetry={fetchDiscountedProducts}/> : (<FlatList
+            <SectionHeader title="Sản Phẩm Khuyến Mãi"
+                onSeeAll={() => router.push('/(app)/product?sort_by=discountPercent&sort_dir=DESC')} />
+            {loading.discounted ? <SectionLoading /> : error.discounted ?
+                <SectionError message={error.discounted} onRetry={fetchDiscountedProducts} /> : (<FlatList
                     data={discountedProducts}
-                    renderItem={({item}) => <ProductCard product={item}
-                                                         onPress={() => handleProductPress(item)}/>}
+                    renderItem={({ item }) => <ProductCard product={item}
+                        onPress={() => handleProductPress(item)} />}
                     keyExtractor={item => `discounted_${item.id.toString()}`}
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{paddingHorizontal: 10, paddingVertical: 8}}
+                    contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8 }}
                 />)}
         </View>
 
+        {/* Latest Blogs Section */}
         <View className="my-3 pb-4">
-            <View className="flex-row justify-between items-center px-4 mb-2">
-                <Text className="text-xl font-semibold text-gray-800">Tin Tức & Bài Viết</Text>
-                <TouchableOpacity onPress={() => router.push('/(app)/blog/')}>
-                    <Text className="text-sm text-sky-600 font-medium">Xem tất cả</Text>
-                </TouchableOpacity>
-            </View>
-            {loading.blogs ? <SectionLoading/> : error.blogs ?
-                <SectionError message={error.blogs} onRetry={fetchLatestBlogs}/> : (latestBlogs.map(post => (
+            <SectionHeader title="Tin Tức & Bài Viết" onSeeAll={() => router.push('/(app)/blog/')} />
+            {loading.blogs ? <SectionLoading /> : error.blogs ?
+                <SectionError message={error.blogs} onRetry={fetchLatestBlogs} /> : (latestBlogs.map(post => (
                     <BlogPostItem key={post.id.toString()} post={post}
-                                  onPress={() => handleBlogPostPress(post)}/>)))}
+                        onPress={() => handleBlogPostPress(post)} />)))}
         </View>
     </ScrollView>);
 }
+
 
 export default HomeScreen;

@@ -1,93 +1,59 @@
-import {useAuth} from '@/contexts/AuthContext';
-import {Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
-import {useRouter} from 'expo-router';
-import React, {useState} from 'react';
-import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
-} from 'react-native';
+// src/screens/auth/RegisterScreen.jsx
+import AuthButton from '@/components/auth/AuthButton';
+import AuthInput from '@/components/auth/AuthInput';
+import { useAuth } from '@/contexts/AuthContext';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 function RegisterScreen() {
     const router = useRouter();
-    const {register} = useAuth();
+    const { register } = useAuth();
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-
-    const isValidEmail = (emailToTest) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(emailToTest);
-    };
 
     const handleRegister = async () => {
         setError('');
         if (!username.trim() || !email.trim() || !password.trim() || !confirmPassword.trim()) {
-            setError("Vui lòng điền đầy đủ thông tin.");
-            return;
+            return setError("Vui lòng điền đầy đủ thông tin.");
         }
-        if (!isValidEmail(email)) {
-            setError("Địa chỉ email không hợp lệ.");
-            return;
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return setError("Địa chỉ email không hợp lệ.");
         }
         if (password.length < 6) {
-            setError("Mật khẩu phải có ít nhất 6 ký tự.");
-            return;
+            return setError("Mật khẩu phải có ít nhất 6 ký tự.");
         }
         if (password !== confirmPassword) {
-            setError("Mật khẩu xác nhận không khớp.");
-            return;
+            return setError("Mật khẩu xác nhận không khớp.");
         }
 
         setIsLoading(true);
         try {
-            const userData = {username, email, password};
-            const response = await register(userData);
-
-            console.log(response)
-
+            const response = await register({ username, email, password });
             if (response && response.status === 201) {
                 Alert.alert("Đăng ký thành công!", response.message || "Tài khoản của bạn đã được tạo. Vui lòng đăng nhập.", [{
                     text: "OK", onPress: () => router.replace('/(auth)/login')
                 }]);
             } else {
-                // Ưu tiên hiển thị lỗi chi tiết từ backend nếu có
-                if (response && response.error && Array.isArray(response.error) && response.error.length > 0) {
-                    const firstError = response.error[0];
-                    setError(`${firstError.field}: ${firstError.message}`);
+                if (response?.error?.[0]) {
+                    setError(`${response.error[0].field}: ${response.error[0].message}`);
                 } else {
                     setError(response?.message || "Đăng ký không thành công. Vui lòng thử lại.");
                 }
             }
         } catch (err) {
-            // Xử lý lỗi chi tiết từ err.error nếu có
-            if (err && err.error && Array.isArray(err.error) && err.error.length > 0) {
-                const firstError = err.error[0];
-                // Hiển thị lỗi cụ thể hơn, ví dụ: "username: Username chỉ được chứa chữ cái thường..."
-                setError(`Lỗi trường ${firstError.field}: ${firstError.message}`);
+            if (err?.error?.[0]) {
+                setError(`Lỗi trường ${err.error[0].field}: ${err.error[0].message}`);
             } else {
                 setError(err?.message || "Đã có lỗi xảy ra trong quá trình đăng ký.");
             }
         } finally {
             setIsLoading(false);
-        }
-    };
-
-    const navigateToLogin = () => {
-        if (!isLoading) {
-            router.replace('/(auth)/login');
         }
     };
 
@@ -97,12 +63,12 @@ function RegisterScreen() {
             className="flex-1"
         >
             <ScrollView
-                contentContainerStyle={{flexGrow: 1, justifyContent: 'center'}}
+                contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
                 className="px-6"
                 keyboardShouldPersistTaps="handled"
             >
                 <View className="items-center mb-8">
-                    <MaterialCommunityIcons name="account-plus-outline" size={80} color="#0EA5E9"/>
+                    <MaterialCommunityIcons name="account-plus-outline" size={80} color="#0EA5E9" />
                     <Text className="text-3xl font-bold text-sky-600 mt-4">Tạo Tài Khoản</Text>
                 </View>
 
@@ -110,96 +76,49 @@ function RegisterScreen() {
                     <Text className="text-red-700 text-center">{error}</Text>
                 </View>) : null}
 
-                <View className="mb-4">
-                    <Text className="text-sm font-medium text-gray-600 mb-1 ml-1">Tên đăng nhập</Text>
-                    <View
-                        className="flex-row items-center bg-white border border-gray-300 rounded-lg p-3 focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
-                        <Ionicons name="person-outline" size={20} color="#6B7280" className="mr-2"/>
-                        <TextInput
-                            className="flex-1 text-base text-gray-800"
-                            placeholder="Nhập tên đăng nhập (chữ thường, số)"
-                            placeholderTextColor="#9CA3AF"
-                            value={username}
-                            onChangeText={setUsername}
-                            autoCapitalize="none"
-                            editable={!isLoading}
-                        />
-                    </View>
-                </View>
+                <AuthInput
+                    label="Tên đăng nhập"
+                    iconName="person-outline"
+                    placeholder="Nhập tên đăng nhập (chữ thường, số)"
+                    value={username}
+                    onChangeText={setUsername}
+                    autoCapitalize="none"
+                    editable={!isLoading}
+                />
+                <AuthInput
+                    label="Email"
+                    iconName="mail-outline"
+                    placeholder="Nhập địa chỉ email"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    editable={!isLoading}
+                />
+                <AuthInput
+                    label="Mật khẩu"
+                    iconName="lock-closed-outline"
+                    placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
+                    value={password}
+                    onChangeText={setPassword}
+                    isPassword={true}
+                    editable={!isLoading}
+                />
+                <AuthInput
+                    label="Xác nhận mật khẩu"
+                    iconName="lock-closed-outline"
+                    placeholder="Nhập lại mật khẩu"
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    isPassword={true}
+                    editable={!isLoading}
+                />
 
-                <View className="mb-4">
-                    <Text className="text-sm font-medium text-gray-600 mb-1 ml-1">Email</Text>
-                    <View
-                        className="flex-row items-center bg-white border border-gray-300 rounded-lg p-3 focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
-                        <Ionicons name="mail-outline" size={20} color="#6B7280" className="mr-2"/>
-                        <TextInput
-                            className="flex-1 text-base text-gray-800"
-                            placeholder="Nhập địa chỉ email"
-                            placeholderTextColor="#9CA3AF"
-                            value={email}
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            editable={!isLoading}
-                        />
-                    </View>
-                </View>
+                <AuthButton title="Đăng Ký" onPress={handleRegister} isLoading={isLoading} />
 
-                <View className="mb-4">
-                    <Text className="text-sm font-medium text-gray-600 mb-1 ml-1">Mật khẩu</Text>
-                    <View
-                        className="flex-row items-center bg-white border border-gray-300 rounded-lg p-3 focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
-                        <Ionicons name="lock-closed-outline" size={20} color="#6B7280" className="mr-2"/>
-                        <TextInput
-                            className="flex-1 text-base text-gray-800"
-                            placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
-                            placeholderTextColor="#9CA3AF"
-                            value={password}
-                            onChangeText={setPassword}
-                            secureTextEntry={!showPassword}
-                            editable={!isLoading}
-                        />
-                        <TouchableOpacity onPress={() => setShowPassword(!showPassword)} disabled={isLoading}>
-                            <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={24}
-                                      color="#6B7280"/>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View className="mb-6">
-                    <Text className="text-sm font-medium text-gray-600 mb-1 ml-1">Xác nhận mật khẩu</Text>
-                    <View
-                        className="flex-row items-center bg-white border border-gray-300 rounded-lg p-3 focus-within:border-sky-500 focus-within:ring-1 focus-within:ring-sky-500">
-                        <Ionicons name="lock-closed-outline" size={20} color="#6B7280" className="mr-2"/>
-                        <TextInput
-                            className="flex-1 text-base text-gray-800"
-                            placeholder="Nhập lại mật khẩu"
-                            placeholderTextColor="#9CA3AF"
-                            value={confirmPassword}
-                            onChangeText={setConfirmPassword}
-                            secureTextEntry={!showConfirmPassword}
-                            editable={!isLoading}
-                        />
-                        <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                                          disabled={isLoading}>
-                            <Ionicons name={showConfirmPassword ? "eye-off-outline" : "eye-outline"} size={24}
-                                      color="#6B7280"/>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <TouchableOpacity
-                    onPress={handleRegister}
-                    disabled={isLoading}
-                    className={`py-4 rounded-lg shadow-md mb-6 ${isLoading ? 'bg-sky-300' : 'bg-sky-500 active:bg-sky-600'}`}
-                >
-                    {isLoading ? (<ActivityIndicator color="#FFFFFF"/>) : (
-                        <Text className="text-white text-center text-lg font-semibold">Đăng Ký</Text>)}
-                </TouchableOpacity>
-
-                <View className="flex-row justify-center items-center">
+                <View className="flex-row justify-center items-center mt-6">
                     <Text className="text-gray-600 text-sm">Đã có tài khoản? </Text>
-                    <TouchableOpacity onPress={navigateToLogin} disabled={isLoading}>
+                    <TouchableOpacity onPress={() => router.replace('/(auth)/login')} disabled={isLoading}>
                         <Text className="text-sky-600 font-semibold text-sm">Đăng nhập</Text>
                     </TouchableOpacity>
                 </View>

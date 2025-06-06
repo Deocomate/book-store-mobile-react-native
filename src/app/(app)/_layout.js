@@ -37,7 +37,7 @@ export default function AppTabsLayoutRoute() {
                 headerShown: false,
                 title: 'Sản phẩm',
                 href: "/(app)/product",
-                tabBarIcon: ({ color, size }) => <Ionicons name="search" size={size} color={color} />,
+                tabBarIcon: ({ color, size }) => <Ionicons name="book" size={size} color={color} />,
             }}
         />
 

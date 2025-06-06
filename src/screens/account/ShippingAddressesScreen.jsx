@@ -32,27 +32,27 @@ const AddEditAddressForm = ({ initialData, onSave, onCancel, isSaving }) => {
     };
 
     return (
-        <View className="bg-white w-full p-5 rounded-t-xl max-h-[90%]">
+        <View className="bg-white w-full p-5 rounded-xl max-h-[90%]">
             <Text className="text-xl font-semibold text-gray-800 mb-5">
                 {initialData?.id ? "Chỉnh sửa địa chỉ" : "Thêm địa chỉ mới"}
             </Text>
             <ScrollView showsVerticalScrollIndicator={false} className="mb-3">
                 <View className="space-y-4">
-                    <View>
+                    <View className='mb-3'>
                         <Text className="text-sm font-medium text-gray-500 mb-1">Họ và tên người nhận</Text>
                         <TextInput value={fullName} onChangeText={setFullName} placeholder="Ví dụ: Nguyễn Văn A" className="border border-gray-300 p-3 rounded-lg text-base bg-white" />
                     </View>
-                    <View>
+                    <View className='mb-3'>
                         <Text className="text-sm font-medium text-gray-500 mb-1">Số điện thoại</Text>
                         <TextInput value={phone} onChangeText={setPhone} placeholder="Ví dụ: 09xxxxxxxx" keyboardType="phone-pad" className="border border-gray-300 p-3 rounded-lg text-base bg-white" />
                     </View>
-                    <View>
+                    <View className='mb-3'>
                         <Text className="text-sm font-medium text-gray-500 mb-1">Địa chỉ chi tiết</Text>
                         <TextInput value={address} onChangeText={setAddress} placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/TP" multiline className="border border-gray-300 p-3 rounded-lg text-base h-24 bg-white" textAlignVertical="top" />
                     </View>
                     <View className="flex-row justify-start space-x-4 items-center py-2">
-                        <Text className="text-base text-gray-700">Giới tính:</Text>
-                        <TouchableOpacity onPress={() => setGender('MALE')} className="flex-row items-center">
+                        <Text className="text-base text-gray-700 mr-3">Giới tính:</Text>
+                        <TouchableOpacity onPress={() => setGender('MALE')} className="flex-row items-center mr-3">
                             <MaterialCommunityIcons name={gender === 'MALE' ? 'radiobox-marked' : 'radiobox-blank'} size={24} color={gender === 'MALE' ? '#0EA5E9' : '#6B7280'} />
                             <Text className="ml-1.5 text-base">Nam</Text>
                         </TouchableOpacity>
@@ -68,7 +68,7 @@ const AddEditAddressForm = ({ initialData, onSave, onCancel, isSaving }) => {
                 </View>
             </ScrollView>
             <View className="flex-row mt-auto space-x-3 border-t border-gray-200 pt-4">
-                <TouchableOpacity onPress={onCancel} className="flex-1 bg-gray-200 py-3 rounded-lg active:bg-gray-300">
+                <TouchableOpacity onPress={onCancel} className="flex-1 bg-gray-200 py-3 rounded-lg active:bg-gray-300 mr-3">
                     <Text className="text-center text-gray-700 font-semibold">Hủy</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleSubmit} disabled={isSaving} className={`flex-1 py-3 rounded-lg ${isSaving ? 'bg-sky-300' : 'bg-sky-500 active:bg-sky-600'}`}>
@@ -280,7 +280,9 @@ const styles = StyleSheet.create({
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
-        justifyContent: 'flex-end', // Hiển thị modal từ dưới lên
+        justifyContent: 'center', // Thay 'flex-end' bằng 'center'
+        alignItems: 'center',
+        padding: 20,    // Thêm dòng này để căn giữa theo chiều ngang
     },
 });
 

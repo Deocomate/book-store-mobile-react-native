@@ -1,9 +1,9 @@
 // src/services/api.js
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import {router} from 'expo-router';
+import { router } from 'expo-router';
 
-const API_BASE_URL = 'http://172.20.64.1:8888/api/v1'; // Đảm bảo IP này đúng và có thể truy cập từ thiết bị/emulator
+const API_BASE_URL = 'http://192.168.0.102:8888/api/v1'; // Đảm bảo IP này đúng và có thể truy cập từ thiết bị/emulator
 
 const api = axios.create({
     baseURL: API_BASE_URL, headers: {
@@ -40,7 +40,7 @@ api.interceptors.response.use((response) => {
     const originalRequest = error.config;
 
     if (error.response) {
-        const {status, data} = error.response;
+        const { status, data } = error.response;
         console.error('API Error:', status, data ? JSON.stringify(data) : error.message, 'for URL:', originalRequest.url);
 
 
@@ -56,14 +56,14 @@ api.interceptors.response.use((response) => {
                 message: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", status: 401, data: data
             });
         }
-        // Trả về object lỗi chứa thông tin từ backend nếu có
-        return Promise.reject(data || {message: error.message || 'An unknown error occurred', status: status});
+        // Trả về object lỗi chứa thônga tin từ backend nếu có
+        return Promise.reject(data || { message: error.message || 'An unknown error occurred', status: status });
     } else if (error.request) {
         console.error('Network Error (no response received):', error.request, 'for URL:', originalRequest.url);
-        return Promise.reject({message: 'Lỗi mạng. Vui lòng kiểm tra kết nối và thử lại.', status: -1}); // -1 for network error
+        return Promise.reject({ message: 'Lỗi mạng. Vui lòng kiểm tra kết nối và thử lại.', status: -1 }); // -1 for network error
     } else {
         console.error('Error setting up request:', error.message, 'for URL:', originalRequest.url);
-        return Promise.reject({message: error.message || 'Có lỗi xảy ra khi gửi yêu cầu.', status: -2}); // -2 for setup error
+        return Promise.reject({ message: error.message || 'Có lỗi xảy ra khi gửi yêu cầu.', status: -2 }); // -2 for setup error
     }
 });
 

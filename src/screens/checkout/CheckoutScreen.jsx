@@ -1,10 +1,10 @@
 // src/screens/checkout/CheckoutScreen.jsx
-import {useAuth} from '@/contexts/AuthContext';
-import {useCart} from '@/contexts/CartContext';
-import {orderService, paymentService, profileService} from '@/services';
-import {Ionicons, MaterialCommunityIcons} from '@expo/vector-icons';
-import {useLocalSearchParams, useRouter} from 'expo-router';
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
+import { orderService, paymentService, profileService } from '@/services';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -21,8 +21,8 @@ import {
 } from 'react-native';
 import WebView from 'react-native-webview';
 
-const CheckoutItem = ({item}) => (<View className="flex-row items-center bg-white p-3 my-1.5 rounded-lg shadow-sm">
-    <Image source={{uri: item.thumbnail}} className="w-16 h-20 rounded-md mr-3"/>
+const CheckoutItem = ({ item }) => (<View className="flex-row items-center bg-white p-3 my-1.5 rounded-lg shadow-sm">
+    <Image source={{ uri: item.thumbnail }} className="w-16 h-20 rounded-md mr-3" />
     <View className="flex-1">
         <Text className="text-sm font-semibold text-gray-800" numberOfLines={2}>{item.productName}</Text>
         <Text className="text-xs text-gray-500 mt-0.5">Số lượng: {item.quantity}</Text>
@@ -32,14 +32,14 @@ const CheckoutItem = ({item}) => (<View className="flex-row items-center bg-whit
     </View>
 </View>);
 
-const AddressItem = ({address, onPress, isSelected}) => (<TouchableOpacity
+const AddressItem = ({ address, onPress, isSelected }) => (<TouchableOpacity
     onPress={onPress}
     className={`p-4 border rounded-lg mb-3 ${isSelected ? 'border-sky-500 bg-sky-50' : 'border-gray-200 bg-white'}`}
 >
     <View className="flex-row justify-between items-center">
         <Text
             className={`text-base font-semibold ${isSelected ? 'text-sky-700' : 'text-gray-800'}`}>{address.fullName}</Text>
-        {isSelected && <Ionicons name="checkmark-circle" size={22} color="#0EA5E9"/>}
+        {isSelected && <Ionicons name="checkmark-circle" size={22} color="#0EA5E9" />}
     </View>
     <Text className="text-sm text-gray-600 mt-0.5">{address.phone}</Text>
     <Text className="text-sm text-gray-600 mt-0.5" numberOfLines={2}>{address.address}</Text>
@@ -52,7 +52,7 @@ const PAYMENT_METHODS = [{
     label: 'Thanh toán khi nhận hàng (COD)',
     value: 0,
     icon: 'cash-outline'
-}, {id: 'VNPAY', label: 'Thanh toán qua VNPay', value: 1, icon: 'wallet-outline'}, {
+}, { id: 'VNPAY', label: 'Thanh toán qua VNPay', value: 1, icon: 'wallet-outline' }, {
     id: 'MOMO',
     label: 'Thanh toán qua MoMo',
     value: 2,
@@ -62,8 +62,8 @@ const PAYMENT_METHODS = [{
 
 function CheckoutScreen() {
     const router = useRouter();
-    const {user} = useAuth();
-    const {removeProductFromCartByProductId} = useCart();
+    const { user } = useAuth();
+    const { removeProductFromCartByProductId } = useCart();
     const params = useLocalSearchParams();
 
     const parsedCheckoutItems = useMemo(() => {
@@ -127,6 +127,10 @@ function CheckoutScreen() {
         fetchShippingAddresses();
     }, [fetchShippingAddresses]);
 
+    useEffect(() => {
+        fetchShippingAddresses();
+    }, [])
+
     const handleSelectAddress = (address) => {
         setSelectedAddress(address);
         setAddressModalVisible(false);
@@ -189,7 +193,7 @@ function CheckoutScreen() {
 
                 if (selectedPaymentMethod === 0) { // COD
                     Alert.alert("Đặt hàng thành công!", `Đơn hàng #${createdOrder.id} của bạn đã được tạo. Chúng tôi sẽ sớm liên hệ với bạn.`);
-                    router.replace({pathname: '/(app)/account/order-history'});
+                    router.replace({ pathname: '/(app)/account/order-history' });
                 } else { // Online payment
                     let paymentApiResponse;
                     try {
@@ -207,13 +211,13 @@ function CheckoutScreen() {
                         } else {
                             Alert.alert("Lỗi thanh toán", paymentApiResponse?.message || "Không thể tạo yêu cầu thanh toán. Đơn hàng của bạn (#" + createdOrder.id + ") đã được ghi nhận, vui lòng thử thanh toán lại hoặc liên hệ CSKH.");
                             router.replace({
-                                pathname: '/(app)/account/order-details', params: {orderId: createdOrder.id}
+                                pathname: '/(app)/account/order-details', params: { orderId: createdOrder.id }
                             });
                         }
                     } catch (paymentError) {
                         console.error("Payment initiation error:", paymentError);
                         Alert.alert("Lỗi khởi tạo thanh toán", paymentError?.message || "Không thể khởi tạo thanh toán. Đơn hàng (#" + createdOrder.id + ") đã được tạo.");
-                        router.replace({pathname: '/(app)/account/order-details', params: {orderId: createdOrder.id}});
+                        router.replace({ pathname: '/(app)/account/order-details', params: { orderId: createdOrder.id } });
                     }
                 }
             } else {
@@ -228,7 +232,7 @@ function CheckoutScreen() {
     };
 
     const handleWebViewNavigation = (navState) => {
-        const {url} = navState;
+        const { url } = navState;
 
         console.log("WebView Navigating to (QUAN TRỌNG):", url);
 
@@ -255,7 +259,7 @@ function CheckoutScreen() {
 
     if (isFetchingAddresses && shippingAddresses.length === 0 && !selectedAddress) {
         return <View className="flex-1 justify-center items-center"><ActivityIndicator size="large"
-                                                                                       color="#0EA5E9"/></View>;
+            color="#0EA5E9" /></View>;
     }
 
     return (<SafeAreaView className="flex-1 bg-slate-100">
@@ -264,12 +268,12 @@ function CheckoutScreen() {
             <View className="p-4 bg-white m-3 rounded-lg shadow-sm">
                 <Text className="text-lg font-semibold text-gray-800 mb-2">Địa chỉ giao hàng</Text>
                 {isFetchingAddresses && !selectedAddress ? (
-                    <ActivityIndicator color="#0EA5E9"/>) : selectedAddress ? (<View>
-                    <Text
-                        className="text-base font-medium text-gray-700">{selectedAddress.fullName} - {selectedAddress.phone}</Text>
-                    <Text className="text-sm text-gray-600 mt-0.5"
-                          numberOfLines={2}>{selectedAddress.address}</Text>
-                </View>) : (
+                    <ActivityIndicator color="#0EA5E9" />) : selectedAddress ? (<View>
+                        <Text
+                            className="text-base font-medium text-gray-700">{selectedAddress.fullName} - {selectedAddress.phone}</Text>
+                        <Text className="text-sm text-gray-600 mt-0.5"
+                            numberOfLines={2}>{selectedAddress.address}</Text>
+                    </View>) : (
                     <Text className="text-gray-500">Chưa có địa chỉ nào được chọn hoặc không tải được địa
                         chỉ.</Text>)}
                 <TouchableOpacity
@@ -287,7 +291,7 @@ function CheckoutScreen() {
             <View className="m-3">
                 <Text className="text-lg font-semibold text-gray-800 mb-1 ml-1">Sản phẩm đặt mua</Text>
                 {parsedCheckoutItems.length > 0 ? parsedCheckoutItems.map(item => <CheckoutItem
-                        key={item.productId?.toString() || Math.random().toString()} item={item}/>) :
+                    key={item.productId?.toString() || Math.random().toString()} item={item} />) :
                     <Text className="text-gray-500 bg-white p-3 rounded-lg shadow-sm">Không có sản phẩm nào trong
                         giỏ hàng.</Text>}
             </View>
@@ -301,7 +305,7 @@ function CheckoutScreen() {
                     className={`flex-row items-center p-3 border rounded-lg mb-2 ${selectedPaymentMethod === method.value ? 'border-sky-500 bg-sky-50' : 'border-gray-200 bg-white'}`}
                 >
                     <Ionicons name={method.icon} size={22}
-                              color={selectedPaymentMethod === method.value ? "#0EA5E9" : "#4B5563"}/>
+                        color={selectedPaymentMethod === method.value ? "#0EA5E9" : "#4B5563"} />
                     <Text
                         className={`ml-3 text-sm font-medium ${selectedPaymentMethod === method.value ? 'text-sky-700' : 'text-gray-700'}`}>{method.label}</Text>
                 </TouchableOpacity>))}
@@ -347,7 +351,7 @@ function CheckoutScreen() {
                 disabled={isPlacingOrder || isFetchingAddresses || parsedCheckoutItems.length === 0}
                 className={`py-3.5 rounded-lg shadow ${isPlacingOrder || isFetchingAddresses || parsedCheckoutItems.length === 0 ? 'bg-gray-300' : 'bg-red-500 active:bg-red-600'}`}
             >
-                {isPlacingOrder ? (<ActivityIndicator color="#FFFFFF"/>) : (
+                {isPlacingOrder ? (<ActivityIndicator color="#FFFFFF" />) : (
                     <Text className="text-white text-center text-base font-semibold">Đặt Hàng</Text>)}
             </TouchableOpacity>
         </View>
@@ -364,12 +368,12 @@ function CheckoutScreen() {
                     <View className="flex-row justify-between items-center mb-4">
                         <Text className="text-xl font-semibold text-gray-800">Chọn địa chỉ giao hàng</Text>
                         <TouchableOpacity onPress={() => setAddressModalVisible(false)} className="p-1">
-                            <Ionicons name="close-circle" size={28} color="#6B7280"/>
+                            <Ionicons name="close-circle" size={28} color="#6B7280" />
                         </TouchableOpacity>
                     </View>
-                    {isFetchingAddresses ? <ActivityIndicator/> : (<FlatList
+                    {isFetchingAddresses ? <ActivityIndicator /> : (<FlatList
                         data={shippingAddresses}
-                        renderItem={({item}) => (<AddressItem
+                        renderItem={({ item }) => (<AddressItem
                             address={item}
                             onPress={() => handleSelectAddress(item)}
                             isSelected={selectedAddress?.id === item.id}
@@ -428,17 +432,17 @@ function CheckoutScreen() {
                         // Chuyển về chi tiết đơn hàng vừa tạo hoặc lịch sử đơn hàng
                         if (currentOrderId) {
                             router.replace({
-                                pathname: '/(app)/account/order-details', params: {orderId: currentOrderId}
+                                pathname: '/(app)/account/order-details', params: { orderId: currentOrderId }
                             });
                         } else {
                             router.replace('/(app)/account/order-history/');
                         }
                     }
-                }], {cancelable: true});
+                }], { cancelable: true });
             }}
             animationType="slide"
         >
-            <SafeAreaView style={{flex: 1, backgroundColor: '#FFFFFF'}}>
+            <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
                 <View style={{
                     flexDirection: 'row',
                     justifyContent: 'flex-end',
@@ -459,27 +463,27 @@ function CheckoutScreen() {
                             }
                         }]);
                     }}>
-                        <Ionicons name="close" size={30} color="#374151"/>
+                        <Ionicons name="close" size={30} color="#374151" />
                     </TouchableOpacity>
                 </View>
                 {paymentUrl ? (<WebView
-                        source={{uri: paymentUrl}}
-                        onNavigationStateChange={handleWebViewNavigation}
-                        startInLoadingState={true}
-                        renderLoading={() => <ActivityIndicator size="large" style={StyleSheet.absoluteFill}
-                                                                color="#0EA5E9"/>}
-                        // Thêm các props cần thiết khác cho WebView
-                        // originWhitelist={['*']} // Cẩn thận khi dùng wildcard
-                        // javaScriptEnabled={true}
-                        // domStorageEnabled={true}
-                    />) :
-                    <ActivityIndicator size="large" style={{flex: 1, justifyContent: 'center'}} color="#0EA5E9"/>}
+                    source={{ uri: paymentUrl }}
+                    onNavigationStateChange={handleWebViewNavigation}
+                    startInLoadingState={true}
+                    renderLoading={() => <ActivityIndicator size="large" style={StyleSheet.absoluteFill}
+                        color="#0EA5E9" />}
+                // Thêm các props cần thiết khác cho WebView
+                // originWhitelist={['*']} // Cẩn thận khi dùng wildcard
+                // javaScriptEnabled={true}
+                // domStorageEnabled={true}
+                />) :
+                    <ActivityIndicator size="large" style={{ flex: 1, justifyContent: 'center' }} color="#0EA5E9" />}
             </SafeAreaView>
         </Modal>
     </SafeAreaView>);
 }
 
-const AddEditAddressForm = ({initialData, onSave, onCancel, isSaving}) => {
+const AddEditAddressForm = ({ initialData, onSave, onCancel, isSaving }) => {
     const [fullName, setFullName] = useState(initialData?.fullName || '');
     const [phone, setPhone] = useState(initialData?.phone || '');
     const [address, setAddress] = useState(initialData?.address || '');
@@ -494,7 +498,7 @@ const AddEditAddressForm = ({initialData, onSave, onCancel, isSaving}) => {
             Alert.alert("Số điện thoại không hợp lệ", "Vui lòng nhập số điện thoại gồm 10 chữ số.");
             return;
         }
-        onSave({fullName: fullName.trim(), phone: phone.trim(), address: address.trim(), gender});
+        onSave({ fullName: fullName.trim(), phone: phone.trim(), address: address.trim(), gender });
     };
 
     return (<View className="bg-white w-full p-5 rounded-t-xl max-h-[90%]">
@@ -503,42 +507,57 @@ const AddEditAddressForm = ({initialData, onSave, onCancel, isSaving}) => {
                 {initialData ? "Chỉnh sửa địa chỉ" : "Thêm địa chỉ mới"}
             </Text>
             <TouchableOpacity onPress={onCancel} className="p-1">
-                <Ionicons name="close-circle" size={28} color="#6B7280"/>
+                <Ionicons name="close-circle" size={28} color="#6B7280" />
             </TouchableOpacity>
         </View>
         <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
             <View className="space-y-4">
-                <TextInput value={fullName} onChangeText={setFullName} placeholder="Họ và tên người nhận"
-                           className="border border-gray-300 p-3 rounded-lg text-base bg-white"/>
-                <TextInput value={phone} onChangeText={setPhone} placeholder="Số điện thoại"
-                           keyboardType="phone-pad"
-                           className="border border-gray-300 p-3 rounded-lg text-base bg-white"/>
-                <TextInput value={address} onChangeText={setAddress}
-                           placeholder="Địa chỉ chi tiết (số nhà, đường, phường/xã, quận/huyện, tỉnh/TP)" multiline
-                           className="border border-gray-300 p-3 rounded-lg text-base h-28 bg-white"
-                           textAlignVertical="top"/>
+                <TextInput
+                    value={fullName}
+                    onChangeText={setFullName}
+                    placeholder="Họ và tên người nhận"
+                    placeholderTextColor="#9CA3AF" // Thêm: Màu cho placeholder
+                    className="mb-3 border border-gray-300 p-3 rounded-lg text-base bg-white focus:border-sky-500" // Thêm: focus style
+                />
+                <TextInput
+                    value={phone}
+                    onChangeText={setPhone}
+                    placeholder="Số điện thoại"
+                    placeholderTextColor="#9CA3AF" // Thêm: Màu cho placeholder
+                    keyboardType="phone-pad"
+                    className="mb-3 border border-gray-300 p-3 rounded-lg text-base bg-white focus:border-sky-500" // Thêm: focus style
+                />
+                <TextInput
+                    value={address}
+                    onChangeText={setAddress}
+                    placeholder="Địa chỉ chi tiết (số nhà, đường, phường/xã, quận/huyện, tỉnh/TP)"
+                    placeholderTextColor="#9CA3AF" // Thêm: Màu cho placeholder
+                    multiline
+                    className="mb-3 border border-gray-300 p-3 rounded-lg text-base h-28 bg-white focus:border-sky-500" // Thêm: focus style
+                    textAlignVertical="top"
+                />
                 <View className="flex-row justify-start space-x-4 items-center py-2">
-                    <Text className="text-base text-gray-700">Giới tính:</Text>
-                    <TouchableOpacity onPress={() => setGender('MALE')} className="flex-row items-center">
+                    <Text className="text-base text-gray-700 mr-3">Giới tính:</Text>
+                    <TouchableOpacity onPress={() => setGender('MALE')} className="flex-row items-center mr-3">
                         <MaterialCommunityIcons name={gender === 'MALE' ? 'radiobox-marked' : 'radiobox-blank'}
-                                                size={24} color={gender === 'MALE' ? '#0EA5E9' : '#6B7280'}/>
+                            size={24} color={gender === 'MALE' ? '#0EA5E9' : '#6B7280'} />
                         <Text className="ml-1.5 text-base">Nam</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => setGender('FEMALE')} className="flex-row items-center">
                         <MaterialCommunityIcons name={gender === 'FEMALE' ? 'radiobox-marked' : 'radiobox-blank'}
-                                                size={24} color={gender === 'FEMALE' ? '#0EA5E9' : '#6B7280'}/>
+                            size={24} color={gender === 'FEMALE' ? '#0EA5E9' : '#6B7280'} />
                         <Text className="ml-1.5 text-base">Nữ</Text>
                     </TouchableOpacity>
                 </View>
             </View>
         </ScrollView>
-        <View className="flex-row mt-6 space-x-3 pt-2 border-t border-gray-200">
-            <TouchableOpacity onPress={onCancel} className="flex-1 bg-gray-200 py-3 rounded-lg active:bg-gray-300">
+        <View className="flex-row mt-6 space-x-3 pt-4 border-t border-gray-200">
+            <TouchableOpacity onPress={onCancel} className="flex-1 bg-gray-200 py-3 rounded-lg active:bg-gray-300 mr-3">
                 <Text className="text-center text-gray-700 font-semibold">Hủy</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSubmit} disabled={isSaving}
-                              className={`flex-1 py-3 rounded-lg ${isSaving ? 'bg-sky-300' : 'bg-sky-500 active:bg-sky-600'}`}>
-                {isSaving ? <ActivityIndicator color="white"/> :
+                className={`flex-1 py-3 rounded-lg ${isSaving ? 'bg-sky-300' : 'bg-sky-500 active:bg-sky-600'}`}>
+                {isSaving ? <ActivityIndicator color="white" /> :
                     <Text className="text-center text-white font-semibold">Lưu địa chỉ</Text>}
             </TouchableOpacity>
         </View>
@@ -547,7 +566,11 @@ const AddEditAddressForm = ({initialData, onSave, onCancel, isSaving}) => {
 
 const styles = StyleSheet.create({
     modalOverlay: {
-        flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end',
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center', // Thay 'flex-end' bằng 'center'
+        alignItems: 'center',
+        padding: 20,    // Thêm dòng này để căn giữa theo chiều ngang
     },
 });
 
